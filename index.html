@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1A1208">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GF Dashboard">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><rect width='180' height='180' rx='40' fill='%231A1208'/><text x='90' y='118' font-size='72' text-anchor='middle' fill='%23E8870A' font-family='Arial' font-weight='bold'>GF</text></svg>">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%20%22Gaavn%20Fresh%20Dashboard%22%2C%20%22short_name%22%3A%20%22GF%20Dash%22%2C%20%22start_url%22%3A%20%22.%22%2C%20%22display%22%3A%20%22standalone%22%2C%20%22background_color%22%3A%20%22%231A1208%22%2C%20%22theme_color%22%3A%20%22%231A1208%22%2C%20%22icons%22%3A%20%5B%7B%22src%22%3A%20%22data%3Aimage/svg%2Bxml%2C%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27180%27%20height%3D%27180%27%3E%3Crect%20width%3D%27180%27%20height%3D%27180%27%20rx%3D%2740%27%20fill%3D%27%25231A1208%27/%3E%3Ctext%20x%3D%2790%27%20y%3D%27118%27%20font-size%3D%2772%27%20text-anchor%3D%27middle%27%20fill%3D%27%2523E8870A%27%20font-family%3D%27Arial%27%20font-weight%3D%27bold%27%3EGF%3C/text%3E%3C/svg%3E%22%2C%20%22sizes%22%3A%20%22192x192%22%2C%20%22type%22%3A%20%22image/svg%2Bxml%22%7D%5D%7D">
+<title>Gaavn Fresh — MIS Dashboard v107</title>
+<style>
+:root{--ink:#1A1208;--cream:#FBF6EC;--surface:#FFFFFF;--surface2:#F7F1E4;--border:#E8DFC9;
+--green:#2E7D32;--red:#C62828;--amber:#C8830A;--blue:#1A527A;--muted:#8A8070;--accent:#E8870A;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--cream);font-family:'Segoe UI',system-ui,sans-serif;color:var(--ink);}
+.mono{font-family:'Space Mono','Courier New',monospace;}
+header{background:var(--ink);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+header .logo{background:var(--accent);color:#fff;font-weight:800;border-radius:10px;padding:8px 10px;font-family:monospace;}
+header h1{font-size:17px;}header .sub{font-family:monospace;font-size:10px;color:var(--accent);letter-spacing:2px;}
+.datebar{margin-left:auto;display:flex;gap:8px;align-items:center;}
+.datebar input{font-family:monospace;font-size:13px;padding:6px 8px;border-radius:8px;border:none;}
+.datebar button{background:#333;color:#fff;border:1px solid #555;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;}
+.tabs{display:flex;gap:4px;background:var(--ink);padding:0 20px 10px;}
+.tabs button{background:none;border:none;color:#bbb;font-family:monospace;font-size:11px;letter-spacing:1px;padding:8px 12px;cursor:pointer;border-bottom:2px solid transparent;}
+.tabs button.on{color:#fff;border-bottom-color:var(--accent);}
+main{max-width:1100px;margin:0 auto;padding:18px;}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px;}
+.card{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;}
+.card .lbl{font-family:monospace;font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;}
+.card .val{font-size:22px;font-weight:800;margin-top:4px;}
+.card .sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.pos{color:var(--green);}.neg{color:var(--red);}
+.panel{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;}
+.panel h3{font-size:13px;font-family:monospace;letter-spacing:1px;margin-bottom:10px;color:#333;}
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+th{background:var(--ink);color:#fff;font-family:monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:7px 9px;text-align:left;}
+td{padding:8px 9px;border-bottom:1px solid var(--border);}
+tr:nth-child(even) td{background:var(--surface2);}
+.chip{display:inline-block;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:2px 9px;font-family:monospace;font-size:10px;margin:2px;}
+.warnbox{background:#FFF3CD;border:1.5px solid var(--amber);border-radius:10px;padding:10px 14px;font-size:12px;margin-bottom:14px;display:none;}
+.err{background:#FDECEA;border:1.5px solid var(--red);border-radius:10px;padding:12px;font-size:12px;color:var(--red);display:none;margin-bottom:14px;}
+.setup input{width:100%;font-family:monospace;font-size:12px;padding:9px;border:1.5px solid var(--border);border-radius:8px;background:var(--cream);}
+.setup button{background:var(--green);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-family:monospace;font-size:11px;font-weight:700;cursor:pointer;margin-top:10px;}
+.muted{color:var(--muted);font-size:11px;}
+#trend-wrap svg{width:100%;height:170px;}
+.spin{text-align:center;padding:40px;color:var(--muted);font-family:monospace;font-size:12px;}
+@media(max-width:640px){
+  .card .val{font-size:18px;}
+  main{padding:10px;}
+  header{padding:10px 12px;}
+  header h1{font-size:15px;}
+  .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .tabs button{padding:12px 14px;font-size:12px;flex-shrink:0;}
+  .datebar{width:100%;justify-content:center;}
+  .datebar button{padding:10px 16px;font-size:14px;min-height:42px;}
+  .datebar input{font-size:15px;padding:8px;}
+  .panel{padding:12px;overflow-x:auto;}
+  td,th{padding:9px 7px;font-size:12px;}
+  .setup button{min-height:44px;}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">GF</div>
+  <div><h1>Gaavn Fresh — MIS Dashboard</h1><div class="sub">P&amp;L · CASH FLOW · PRODUCT MARGINS · v107</div></div>
+  <div class="datebar">
+    <button onclick="shiftDay(-1)">◀</button>
+    <input type="date" id="pick-date" onchange="refresh()">
+    <button onclick="shiftDay(1)">▶</button>
+    <button onclick="refresh()" id="btn-refresh">⟳ Refresh</button>
+  </div>
+</header>
+<div class="tabs">
+  <button id="tab-day" class="on" onclick="showTab('day')">📊 TODAY</button>
+  <button id="tab-trend" onclick="showTab('trend')">📈 TREND</button>
+  <button id="tab-month" onclick="showTab('month')">📅 MONTH P&L</button>
+  <button id="tab-setup" onclick="showTab('setup')">⚙ SETUP</button>
+</div>
+<main>
+  <div class="err" id="errbox"></div>
+  <div class="warnbox" id="warnbox"></div>
+
+  <section id="view-day">
+    <div class="spin" id="day-loading" style="display:none;">⏳ Loading from MIS…</div>
+    <div id="day-content" style="display:none;">
+      <label class="mono" style="font-size:11px;display:inline-flex;gap:6px;align-items:center;margin-bottom:10px;cursor:pointer;">
+        <input type="checkbox" id="chk-smooth" onchange="toggleSmooth()"> Smooth recurring expenses (salary, rent — spread evenly over the month)
+      </label>
+      <div class="cards" id="pnl-cards"></div>
+      <div class="panel"><h3>💵 CASH FLOW (day)</h3><div id="cash-body"></div></div>
+      <div class="panel"><h3>🧀 PRODUCT-WISE P&amp;L (sold)</h3><div id="prod-body"></div></div>
+      <div class="panel"><h3>🏭 PRODUCED TODAY (production tracker)</h3><div id="produced-body"></div></div>
+      <div class="panel"><h3>🧾 EXPENSES BY CATEGORY</h3><div id="exp-body"></div></div>
+    </div>
+  </section>
+
+  <section id="view-trend" style="display:none;">
+    <div class="panel"><h3>📈 LAST 7 DAYS — REVENUE vs COGS vs NET</h3>
+      <div class="spin" id="trend-loading" style="display:none;">⏳ Building trend…</div>
+      <div id="trend-wrap"></div><div id="trend-table"></div>
+    </div>
+  </section>
+
+  <section id="view-month" style="display:none;">
+    <div class="panel">
+      <h3>📅 MONTHLY P&L</h3>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+        <input type="month" id="pick-month" onchange="loadMonth()" style="font-family:monospace;font-size:13px;padding:6px 8px;border-radius:8px;border:1.5px solid var(--border);background:var(--cream);">
+        <button onclick="loadMonth()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-family:monospace;font-size:11px;font-weight:700;cursor:pointer;">📊 Build Month P&L</button>
+        <button onclick="dlCSV()" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-family:monospace;font-size:11px;font-weight:700;cursor:pointer;">⬇ Download CSV for accountant</button>
+        <label class="mono" style="font-size:10px;color:var(--muted);">Opening stock ₹ <input type="number" id="stk-open" onchange="saveStk()" style="width:110px;font-family:monospace;font-size:11px;padding:5px;border:1.5px solid var(--border);border-radius:8px;background:var(--cream);"></label>
+        <label class="mono" style="font-size:10px;color:var(--muted);">Closing stock ₹ <input type="number" id="stk-close" onchange="saveStk()" style="width:110px;font-family:monospace;font-size:11px;padding:5px;border:1.5px solid var(--border);border-radius:8px;background:var(--cream);"></label>
+        <span class="muted">takes ~15–30 s — it recomputes every day of the month</span>
+      </div>
+      <div class="spin" id="month-loading" style="display:none;">⏳ Aggregating the month…</div>
+      <div id="month-content">
+        <div class="cards" id="month-cards"></div>
+        <div class="panel"><h3>🔍 MILK vs COGS RECONCILIATION</h3><div id="month-recon"></div></div>
+        <div class="panel"><h3>🧀 PRODUCT-WISE (month)</h3><div id="month-prod"></div></div>
+        <div class="panel"><h3>🧾 EXPENSE CATEGORIES (month)</h3><div id="month-exp"></div></div>
+        <div class="panel"><h3>📆 DAY BY DAY</h3><div id="month-days"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-setup" style="display:none;">
+    <div class="panel setup">
+      <h3>⚙ SETUP</h3>
+      <p class="muted" style="margin-bottom:8px;">Paste the MIS Apps Script <b>web app /exec URL</b> (from the GaavnFresh_MIS_Script file — see its header for deploy steps):</p>
+      <input type="text" id="mis-url" placeholder="https://script.google.com/macros/s/…/exec">
+      <button onclick="saveUrl()">💾 Save &amp; Test</button>
+      <span id="setup-status" class="muted" style="margin-left:10px;"></span>
+      <p class="muted" style="margin-top:14px;">Product name mapping and which expense categories count in P&amp;L are edited in the MIS Google Sheet — tabs <b>Product_Map</b> and <b>PnL_Config</b> (created automatically on first run).</p>
+    </div>
+  </section>
+</main>
+<script>
+const LS_URL='gfmis_url';
+let S={url:localStorage.getItem(LS_URL)||'',data:null,timer:null,smooth:localStorage.getItem('gfmis_smooth')==='1',trendRows:null};
+function toggleSmooth(){S.smooth=el('chk-smooth').checked;localStorage.setItem('gfmis_smooth',S.smooth?'1':'0');if(S.data)renderDay(S.data);if(S.trendRows)renderTrend(S.trendRows);}
+const fmt=n=>'₹'+(+n||0).toLocaleString('en-IN');
+const el=id=>document.getElementById(id);
+function todayISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function showTab(t){['day','trend','month','setup'].forEach(x=>{el('view-'+x).style.display=x===t?'':'none';el('tab-'+x).classList.toggle('on',x===t);});if(t==='trend')loadTrend();if(t==='month'&&!S.month)loadMonth();}
+function shiftDay(n){const p=el('pick-date');const d=new Date(p.value||todayISO());d.setDate(d.getDate()+n);p.value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');refresh();}
+function saveUrl(){const u=el('mis-url').value.trim();if(!u){el('setup-status').textContent='enter the URL';return;}
+  localStorage.setItem(LS_URL,u);S.url=u;el('setup-status').textContent='⏳ testing…';
+  fetch(u+'?action=ping').then(r=>r.json()).then(j=>{el('setup-status').textContent=j.pong?'✅ connected (script v'+j.v+')':'✗ unexpected reply';if(j.pong){showTab('day');refresh();}})
+  .catch(()=>{el('setup-status').textContent='✗ could not reach — check deployment access = Anyone';});}
+function err(msg){el('errbox').textContent=msg;el('errbox').style.display=msg?'':'none';}
+async function refresh(){
+  err('');el('warnbox').style.display='none';
+  if(!S.url){showTab('setup');return;}
+  const date=el('pick-date').value||todayISO();
+  el('day-loading').style.display='';el('day-content').style.display='none';
+  const btn=el('btn-refresh');btn.textContent='⏳…';
+  try{
+    const r=await fetch(S.url+'?action=dashboard&date='+date,{cache:'no-store'});
+    const d=await r.json();
+    if(d.error)throw new Error(d.error);
+    S.data=d;renderDay(d);
+  }catch(e){err('Could not load: '+e.message+' — check Setup / connection');}
+  el('day-loading').style.display='none';el('day-content').style.display='';btn.textContent='⟳ Refresh';
+}
+function card(lbl,val,cls,sub){return `<div class="card"><div class="lbl">${lbl}</div><div class="val ${cls||''}">${val}</div>${sub?`<div class="sub">${sub}</div>`:''}</div>`;}
+function renderDay(d){
+  const p=d.pnl;
+  const canSmooth=p.opExpensesSmoothed!==undefined;
+  const useSm=S.smooth&&canSmooth;
+  const opx=useSm?p.opExpensesSmoothed:p.opExpenses;
+  const net=useSm?p.netSmoothed:p.net;
+  const chk=el('chk-smooth');if(chk){chk.checked=S.smooth;chk.disabled=!canSmooth;}
+  el('pnl-cards').innerHTML=
+    card('Revenue',fmt(p.revenue),'', d.sales.orders+' orders')+
+    card('COGS (sold)',fmt(p.cogsSold),'','milk+ing+packing per unit · gas & fixed in OPEX')+
+    card('Gross Margin',fmt(p.grossMargin),p.grossMargin>=0?'pos':'neg',p.gmPct+'%')+
+    card('Op. Expenses'+(useSm?' (smoothed)':''),fmt(opx),'',useSm?('actual today: '+fmt(p.opExpenses)):fmt(d.expenses.excluded)+' excluded')+
+    card('NET P&L'+(useSm?' (smoothed)':''),fmt(net),net>=0?'pos':'neg',useSm?('actual: '+fmt(p.net)):'revenue − COGS − op. expenses')+
+    card('New Dues',fmt(d.sales.duesNew),d.sales.duesNew>0?'neg':'', 'billed but not collected');
+  const modes=Object.entries(d.cash.byMode||{}).map(([m,v])=>`<span class="chip">${m}: ${fmt(v)}</span>`).join('')||'<span class="muted">no payments recorded</span>';
+  el('cash-body').innerHTML=`<table><tr><th>Cash In (payments)</th><th>Cash Out — expenses paid</th><th>Milk purchase (accrual)</th><th>Net Cash (in − expenses paid)</th></tr>
+    <tr><td><b>${fmt(d.cash.inTotal)}</b><br>${modes}</td><td><b>${fmt(d.cash.outExpensesPaid)}</b></td>
+    <td><b>${fmt(d.cash.outMilk)}</b><br><span class="muted">count it the day you actually pay the vendor</span></td>
+    <td class="${d.cash.net>=0?'pos':'neg'}"><b>${fmt(d.cash.net)}</b></td></tr></table>`;
+  const rows=(d.cogs.perProduct||[]).sort((a,b)=>b.amount-a.amount);
+  const unmapped=rows.filter(r=>!r.mapped);
+  el('prod-body').innerHTML=rows.length?`<table><tr><th>Product (sales)</th><th>Qty</th><th>Revenue</th><th>COGS/u</th><th>COGS</th><th>GM</th><th>GM%</th></tr>`+
+    rows.map(r=>`<tr><td>${r.sales}${r.mapped?'':' ⚠'}</td><td>${(+r.qty).toFixed(1)}</td><td>${fmt(r.amount)}</td>
+      <td>${r.mapped?fmt(r.cpu)+(r.cpuDate==='std'?'<br><span class="muted">std cost</span>':(r.cpuDate!==d.date?'<br><span class="muted">'+r.cpuDate+'</span>':'')):'—'}</td>
+      <td>${r.mapped?fmt(r.cogs):'—'}</td><td class="${r.gm>=0?'pos':'neg'}">${fmt(r.gm)}</td>
+      <td class="${r.gm>=0?'pos':'neg'}">${r.mapped?r.gmPct+'%':'—'}</td></tr>`).join('')+'</table>'
+    :'<div class="muted">No sales recorded for this date.</div>';
+  if(unmapped.length){el('warnbox').style.display='';el('warnbox').innerHTML='⚠ No production COGS found for: <b>'+unmapped.map(r=>r.sales).join(', ')+'</b> — check Product_Map tab in the MIS sheet, or no production entry in the last 14 days.';}
+  el('produced-body').innerHTML=(d.cogs.produced&&d.cogs.produced.length)?`<table><tr><th>Product</th><th>Yield</th><th>COGS/u</th><th>Total COGS</th></tr>`+
+    d.cogs.produced.map(r=>`<tr><td>${r.name}${r.intermediate?' <span class="muted">(intermediate — excluded from totals)</span>':''}</td><td>${r.yield}</td><td>${fmt(r.cpu)}</td><td>${r.intermediate?'<span class="muted">'+fmt(r.totalCogs)+'</span>':fmt(r.totalCogs)}</td></tr>`).join('')+
+    `<tr><td colspan="3" style="text-align:right;"><b>Total production cost</b></td><td><b>${fmt(d.cogs.producedTotal)}</b></td></tr></table>`
+    :'<div class="muted">No production entry for this date.</div>';
+  const cats=Object.entries(d.expenses.byCategory||{}).sort((a,b)=>b[1].total-a[1].total);
+  el('exp-body').innerHTML=cats.length?`<table><tr><th>Category</th><th>Total</th><th>Paid</th></tr>`+
+    cats.map(([c,v])=>`<tr><td>${c}</td><td>${fmt(v.total)}</td><td>${fmt(v.paid)}</td></tr>`).join('')+
+    `<tr><td style="text-align:right;"><b>Total</b></td><td><b>${fmt(d.expenses.total)}</b></td><td><b>${fmt(d.expenses.paid)}</b></td></tr></table>`
+    :'<div class="muted">No expenses recorded for this date.</div>';
+}
+async function loadTrend(){
+  if(!S.url)return;
+  el('trend-loading').style.display='';el('trend-wrap').innerHTML='';el('trend-table').innerHTML='';
+  try{
+    const to=el('pick-date').value||todayISO();
+    const r=await fetch(S.url+'?action=trend&days=7&to='+to,{cache:'no-store'});
+    const j=await r.json();if(j.error)throw new Error(j.error);
+    const rows=j.rows||[];
+    S.trendRows=rows;
+    renderTrend(rows);
+  }catch(e){el('trend-wrap').innerHTML='<div class="muted">Trend failed: '+e.message+'</div>';}
+  el('trend-loading').style.display='none';
+}
+function renderTrend(rows){
+    const nv=x=>(S.smooth&&x.netS!==undefined)?x.netS:x.net;
+    const ev=x=>(S.smooth&&x.expS!==undefined)?x.expS:x.exp;
+    const max=Math.max(1,...rows.map(x=>Math.max(x.revenue,x.cogs,Math.abs(nv(x)))));
+    const W=700,H=160,bw=W/rows.length;
+    let svg=`<svg viewBox="0 0 ${W} ${H+22}" xmlns="http://www.w3.org/2000/svg">`;
+    rows.forEach((x,i)=>{
+      const rx=i*bw;
+      const rh=x.revenue/max*H, ch=x.cogs/max*H, nh=Math.abs(nv(x))/max*H;
+      svg+=`<rect x="${rx+4}" y="${H-rh}" width="${bw/3-5}" height="${rh}" fill="#1A527A"/>`;
+      svg+=`<rect x="${rx+bw/3+2}" y="${H-ch}" width="${bw/3-5}" height="${ch}" fill="#C8830A"/>`;
+      svg+=`<rect x="${rx+2*bw/3}" y="${H-nh}" width="${bw/3-5}" height="${nh}" fill="${nv(x)>=0?'#2E7D32':'#C62828'}"/>`;
+      svg+=`<text x="${rx+bw/2}" y="${H+14}" font-size="9" text-anchor="middle" font-family="monospace">${x.date.slice(8,10)}/${x.date.slice(5,7)}</text>`;
+    });
+    svg+='</svg><div class="muted" style="margin-top:4px;"><span class="chip" style="border-color:#1A527A;">■ Revenue</span><span class="chip" style="border-color:#C8830A;">■ COGS</span><span class="chip" style="border-color:#2E7D32;">■ Net P&L'+(S.smooth?' (smoothed)':'')+'</span></div>';
+    el('trend-wrap').innerHTML=svg;
+    el('trend-table').innerHTML=`<table><tr><th>Date</th><th>Revenue</th><th>COGS</th><th>GM</th><th>Op.Exp${S.smooth?' (sm)':''}</th><th>Net${S.smooth?' (sm)':''}</th><th>Cash In</th><th>Cash Out</th></tr>`+
+      rows.map(x=>`<tr><td>${x.date.slice(8,10)}/${x.date.slice(5,7)}</td><td>${fmt(x.revenue)}</td><td>${fmt(x.cogs)}</td><td>${fmt(x.gm)}</td><td>${fmt(ev(x))}</td>
+      <td class="${nv(x)>=0?'pos':'neg'}"><b>${fmt(nv(x))}</b></td><td>${fmt(x.cashIn)}</td><td>${fmt(x.cashOut)}</td></tr>`).join('')+'</table>';
+}
+async function loadMonth(){
+  if(!S.url){showTab('setup');return;}
+  const ym=el('pick-month').value||todayISO().slice(0,7);
+  el('month-loading').style.display='';el('month-content').style.display='none';err('');
+  try{
+    const r=await fetch(S.url+'?action=month&month='+ym,{cache:'no-store'});
+    const d=await r.json();if(d.error)throw new Error(d.error);
+    S.month=d;renderMonth(d);
+  }catch(e){err('Month P&L failed: '+e.message);}
+  el('month-loading').style.display='none';el('month-content').style.display='';
+}
+const MONN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function stkKey(){return 'gfmis_stk_'+((S.month&&S.month.month)||el('pick-month').value||todayISO().slice(0,7));}
+function loadStk(){try{const v=JSON.parse(localStorage.getItem(stkKey())||'{}');el('stk-open').value=v.open??'';el('stk-close').value=v.close??'';}catch(e){}}
+function saveStk(){localStorage.setItem(stkKey(),JSON.stringify({open:+el('stk-open').value||0,close:+el('stk-close').value||0}));if(S.month)renderMonth(S.month);}
+function stkVals(){try{return JSON.parse(localStorage.getItem(stkKey())||'{}');}catch(e){return {};}}
+function monLabel(ym){return MONN[+ym.slice(5,7)-1]+' '+ym.slice(0,4);}
+function renderMonth(d){
+  const T=d.totals;
+  const hasProd=T.cogsProduction!==undefined;
+  el('month-cards').innerHTML=
+    card('Revenue — '+monLabel(d.month),fmt(T.revenue),'',T.orders+' orders · up to '+d.upto)+
+    (hasProd?card('COGS — production (month)',fmt(T.cogsProduction),'','milk + ingredients + packing · gas & fixed excluded'):'')+
+    (hasProd?card('Gross Margin (production)',fmt(T.grossMarginProd),T.grossMarginProd>=0?'pos':'neg',T.gmPctProd+'%'):'')+
+    card('Op. Expenses',fmt(T.opExpenses),'',fmt(T.excluded)+' excluded')+
+    (hasProd?card('NET P&L — '+monLabel(d.month),fmt(T.netProd),T.netProd>=0?'pos':'neg','production basis · before stock adj & depreciation'):card('NET P&L — '+monLabel(d.month),fmt(T.net),T.net>=0?'pos':'neg','before stock adjustment & depreciation'))+
+    card('COGS — sold-matched',fmt(T.cogsSold),'','qty sold × COGS/unit (info)')+
+    (hasProd?card('Net (sold basis)',fmt(T.net),T.net>=0?'pos':'neg','if unsold stock is excluded'):'')+
+    card('Cash In',fmt(T.cashIn),'','payments received')+
+    card('Expenses Paid',fmt(T.expensesPaid),'','cash out · internal transfers excluded')+
+    card('Milk Purchased',fmt(T.milk),'','accrual — pay-cycle basis')+
+    card('New Dues',fmt(T.duesNew),T.duesNew>0?'neg':'','billed, not collected');
+  const sv=stkVals();
+  if(hasProd&&(sv.open||sv.close)){
+    const adj=(+sv.close||0)-(+sv.open||0);
+    const effCogs=T.cogsProduction-adj;
+    const netEff=T.revenue-effCogs-T.opExpenses;
+    el('month-cards').innerHTML+=
+      card('Stock Adjustment',fmt(adj),adj>=0?'pos':'neg',(adj>=0?'inventory built (deducted from COGS)':'old stock consumed (added to COGS)'))+
+      card('EFFECTIVE COGS',fmt(effCogs),'','production COGS − stock adjustment')+
+      card('NET P&L after stock adj.',fmt(netEff),netEff>=0?'pos':'neg','the accountant-method figure');
+  }
+  loadStk();
+  const cogsRef=(T.cogsProduction!==undefined)?T.cogsProduction:T.cogsSold;
+  const diff=T.milk-cogsRef;
+  el('month-recon').innerHTML=`<table>
+    <tr><th>Milk purchased (accrual)</th><th>COGS — production</th><th>COGS — sold-matched</th><th>Revenue with NO cost ⚠</th><th>Milk − production COGS</th></tr>
+    <tr><td>${fmt(T.milk)}</td><td>${fmt(cogsRef)}</td><td>${fmt(T.cogsSold)}</td><td>${fmt(T.unmappedRevenue||0)}</td><td><b>${fmt(diff)}</b></td></tr></table>
+    <div class="muted" style="margin-top:8px;line-height:1.6;">The gap is milk that became <b>unsold stock</b> (ghee, khoya, cream in store), intermediates in process,
+    products sold without a COGS map (⚠ rows below — give them a Std COGS/unit in Product_Map), and process losses.
+    If you expense ALL milk purchased in your manual P&L, your "loss" will differ from this dashboard by roughly this gap —
+    a month-end stock count splits it precisely into stock value vs real loss.</div>`;
+  el('month-prod').innerHTML=(d.byProduct&&d.byProduct.length)?`<table><tr><th>Product</th><th>Qty</th><th>Revenue</th><th>COGS</th><th>GM</th><th>GM%</th></tr>`+
+    d.byProduct.map(p=>`<tr><td>${p.sales}${p.unmappedAmt>0?' ⚠':''}</td><td>${p.qty}</td><td>${fmt(p.amount)}</td><td>${fmt(p.cogs)}</td>
+      <td class="${p.gm>=0?'pos':'neg'}">${fmt(p.gm)}</td><td class="${p.gm>=0?'pos':'neg'}">${p.gmPct}%</td></tr>`).join('')+'</table>'
+    :'<div class="muted">No sales this month.</div>';
+  const cats=Object.entries(d.byCategory||{}).sort((a,b)=>b[1].total-a[1].total);
+  el('month-exp').innerHTML=cats.length?`<table><tr><th>Category</th><th>Total</th><th>Paid</th><th>In P&L?</th></tr>`+
+    cats.map(([c,v])=>`<tr><td>${c}</td><td>${fmt(v.total)}</td><td>${fmt(v.paid)}</td><td>${v.counted?'YES':'<span class="muted">no</span>'}</td></tr>`).join('')+'</table>'
+    :'<div class="muted">No expenses this month.</div>';
+  el('month-days').innerHTML=(d.days&&d.days.length)?`<table><tr><th>Date</th><th>Revenue</th><th>COGS</th><th>GM</th><th>Op.Exp</th><th>Net</th><th>Cash In</th><th>Exp Paid</th><th>Milk</th></tr>`+
+    d.days.map(x=>`<tr><td>${x.date.slice(8,10)}/${x.date.slice(5,7)}</td><td>${fmt(x.revenue)}</td><td>${fmt(x.cogs)}</td><td>${fmt(x.gm)}</td><td>${fmt(x.opExp)}</td>
+      <td class="${x.net>=0?'pos':'neg'}"><b>${fmt(x.net)}</b></td><td>${fmt(x.cashIn)}</td><td>${fmt(x.expPaid)}</td><td>${fmt(x.milk)}</td></tr>`).join('')+'</table>'
+    :'<div class="muted">No activity recorded.</div>';
+}
+function csvEsc(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
+function dlCSV(){
+  const d=S.month;
+  if(!d){loadMonth().then(()=>{if(S.month)dlCSV();});return;}
+  const T=d.totals,L=[];
+  L.push(['GAAVN FRESH - MONTHLY P&L',d.month+' (up to '+d.upto+')']);
+  L.push([]);L.push(['SUMMARY']);
+  [['Revenue',T.revenue],
+   ['COGS (production basis — whole month)',T.cogsProduction!==undefined?T.cogsProduction:''],
+   ['Gross Margin (production basis)',T.grossMarginProd!==undefined?T.grossMarginProd:''],
+   ['GM % (production basis)',T.gmPctProd!==undefined?T.gmPctProd+'%':''],
+   ['NET P&L (production basis)',T.netProd!==undefined?T.netProd:''],[],
+   ['COGS (sold-matched)',T.cogsSold],['Gross Margin (sold basis)',T.grossMargin],['GM % (sold basis)',T.gmPct+'%'],
+   ['Operating Expenses',T.opExpenses],['NET P&L (sold basis)',T.net],[],
+   ['Orders',T.orders],['New Dues (billed not collected)',T.duesNew],['Cash In (payments received)',T.cashIn],
+   ['Expenses Paid (cash out)',T.expensesPaid],['Milk Purchased (accrual)',T.milk],
+   ['Expenses excluded from P&L (in COGS/capital/GST)',T.excluded],
+   ['Opening Stock (entered)',stkVals().open||0],['Closing Stock (entered)',stkVals().close||0],
+   ['Stock Adjustment (closing − opening)',(+stkVals().close||0)-(+stkVals().open||0)],
+   ['EFFECTIVE COGS (production − stock adj)',T.cogsProduction!==undefined?(T.cogsProduction-(((+stkVals().close||0)-(+stkVals().open||0)))):''],
+   ['NET P&L after stock adjustment',T.cogsProduction!==undefined?(T.revenue-(T.cogsProduction-(((+stkVals().close||0)-(+stkVals().open||0))))-T.opExpenses):''],
+   ['Revenue with no COGS attached',T.unmappedRevenue||0],
+   ['Milk purchased minus COGS charged (stock build + losses)',T.milk-T.cogsSold]].forEach(r=>L.push(r));
+  L.push([]);L.push(['NOTE','Accountant adjustments still needed: opening/closing stock valuation, depreciation, GST net-off']);
+  L.push([]);L.push(['PRODUCT-WISE']);L.push(['Product','Qty','Revenue','COGS','GM','GM%','Revenue without COGS map']);
+  d.byProduct.forEach(p=>L.push([p.sales,p.qty,p.amount,p.cogs,p.gm,p.gmPct+'%',p.unmappedAmt||0]));
+  L.push([]);L.push(['EXPENSES BY CATEGORY']);L.push(['Category','Total','Paid','Counted in P&L']);
+  Object.entries(d.byCategory).sort((a,b)=>b[1].total-a[1].total).forEach(([c,v])=>L.push([c,v.total,v.paid,v.counted?'YES':'NO']));
+  L.push([]);L.push(['DAILY']);L.push(['Date','Revenue','COGS','GM','Op Exp','Net','Cash In','Exp Paid','Milk Purchased']);
+  d.days.forEach(x=>L.push([x.date,x.revenue,x.cogs,x.gm,x.opExp,x.net,x.cashIn,x.expPaid,x.milk]));
+  const csv='\ufeff'+L.map(r=>r.map(csvEsc).join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download='GaavnFresh_PnL_'+d.month+'.csv';a.click();
+}
+// init
+el('pick-date').value=todayISO();
+el('pick-month').value=todayISO().slice(0,7);
+el('mis-url').value=S.url;
+if(S.url){refresh();}else{showTab('setup');}
+S.timer=setInterval(()=>{if(S.url&&el('view-day').style.display!=='none')refresh();},5*60*1000);
+</script>
+</body>
+</html>
