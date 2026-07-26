@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="GF Dashboard">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><rect width='180' height='180' rx='40' fill='%231A1208'/><text x='90' y='118' font-size='72' text-anchor='middle' fill='%23E8870A' font-family='Arial' font-weight='bold'>GF</text></svg>">
 <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%20%22Gaavn%20Fresh%20Dashboard%22%2C%20%22short_name%22%3A%20%22GF%20Dash%22%2C%20%22start_url%22%3A%20%22.%22%2C%20%22display%22%3A%20%22standalone%22%2C%20%22background_color%22%3A%20%22%231A1208%22%2C%20%22theme_color%22%3A%20%22%231A1208%22%2C%20%22icons%22%3A%20%5B%7B%22src%22%3A%20%22data%3Aimage/svg%2Bxml%2C%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27180%27%20height%3D%27180%27%3E%3Crect%20width%3D%27180%27%20height%3D%27180%27%20rx%3D%2740%27%20fill%3D%27%25231A1208%27/%3E%3Ctext%20x%3D%2790%27%20y%3D%27118%27%20font-size%3D%2772%27%20text-anchor%3D%27middle%27%20fill%3D%27%2523E8870A%27%20font-family%3D%27Arial%27%20font-weight%3D%27bold%27%3EGF%3C/text%3E%3C/svg%3E%22%2C%20%22sizes%22%3A%20%22192x192%22%2C%20%22type%22%3A%20%22image/svg%2Bxml%22%7D%5D%7D">
-<title>Gaavn Fresh — MIS Dashboard v107</title>
+<title>Gaavn Fresh — MIS Dashboard v108</title>
 <style>
 :root{--ink:#1A1208;--cream:#FBF6EC;--surface:#FFFFFF;--surface2:#F7F1E4;--border:#E8DFC9;
 --green:#2E7D32;--red:#C62828;--amber:#C8830A;--blue:#1A527A;--muted:#8A8070;--accent:#E8870A;}
@@ -66,7 +66,7 @@ tr:nth-child(even) td{background:var(--surface2);}
 <body>
 <header>
   <div class="logo">GF</div>
-  <div><h1>Gaavn Fresh — MIS Dashboard</h1><div class="sub">P&amp;L · CASH FLOW · PRODUCT MARGINS · v107</div></div>
+  <div><h1>Gaavn Fresh — MIS Dashboard</h1><div class="sub">P&amp;L · CASH FLOW · PRODUCT MARGINS · KPI · v108</div></div>
   <div class="datebar">
     <button onclick="shiftDay(-1)">◀</button>
     <input type="date" id="pick-date" onchange="refresh()">
@@ -78,6 +78,7 @@ tr:nth-child(even) td{background:var(--surface2);}
   <button id="tab-day" class="on" onclick="showTab('day')">📊 TODAY</button>
   <button id="tab-trend" onclick="showTab('trend')">📈 TREND</button>
   <button id="tab-month" onclick="showTab('month')">📅 MONTH P&L</button>
+  <button id="tab-kpi" onclick="showTab('kpi')">📋 KPI</button>
   <button id="tab-setup" onclick="showTab('setup')">⚙ SETUP</button>
 </div>
 <main>
@@ -127,6 +128,32 @@ tr:nth-child(even) td{background:var(--surface2);}
     </div>
   </section>
 
+  <section id="view-kpi" style="display:none;">
+    <div class="panel">
+      <h3>📋 PRODUCT &amp; CUSTOMER KPI REPORT</h3>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+        <input type="date" id="kpi-from" style="font-family:monospace;font-size:12px;padding:6px;border:1.5px solid var(--border);border-radius:8px;background:var(--cream);">
+        <input type="date" id="kpi-to" style="font-family:monospace;font-size:12px;padding:6px;border:1.5px solid var(--border);border-radius:8px;background:var(--cream);">
+        <button onclick="kpiPreset(30)" class="chip" style="cursor:pointer;">30 days</button>
+        <button onclick="kpiPreset(60)" class="chip" style="cursor:pointer;">60 days</button>
+        <button onclick="kpiPreset(90)" class="chip" style="cursor:pointer;">90 days</button>
+        <button onclick="loadKPI()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-family:monospace;font-size:11px;font-weight:700;cursor:pointer;">📊 Build Report</button>
+        <button onclick="loadKPIMargins()" id="btn-kpi-margin" style="background:var(--amber);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-family:monospace;font-size:11px;font-weight:700;cursor:pointer;">🧀 Load Margins (MIS)</button>
+        <button onclick="dlKPICSV()" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-family:monospace;font-size:11px;font-weight:700;cursor:pointer;">⬇ CSV</button>
+      </div>
+      <div class="muted" style="margin-bottom:8px;">Every metric compares the selected period against the immediately-previous period of equal length. Growth, retention and churn come from that comparison.</div>
+      <div class="spin" id="kpi-loading" style="display:none;">⏳ Pulling orders from the sales sheet…</div>
+      <div id="kpi-content" style="display:none;">
+        <div class="cards" id="kpi-cust-cards"></div>
+        <div class="panel"><h3>🧀 PRODUCT PERFORMANCE</h3><div id="kpi-prod-table"></div>
+          <div class="muted" id="kpi-margin-note" style="margin-top:6px;"></div></div>
+        <div class="panel"><h3>⚡ FAST / 🐌 SLOW / 💀 DEAD</h3><div id="kpi-fsd"></div></div>
+        <div class="panel"><h3>👥 TOP 20 CUSTOMERS</h3><div id="kpi-top20"></div></div>
+        <div class="panel"><h3>⏱ DAYS SINCE LAST PURCHASE</h3><div id="kpi-recency"></div></div>
+      </div>
+    </div>
+  </section>
+
   <section id="view-setup" style="display:none;">
     <div class="panel setup">
       <h3>⚙ SETUP</h3>
@@ -134,18 +161,24 @@ tr:nth-child(even) td{background:var(--surface2);}
       <input type="text" id="mis-url" placeholder="https://script.google.com/macros/s/…/exec">
       <button onclick="saveUrl()">💾 Save &amp; Test</button>
       <span id="setup-status" class="muted" style="margin-left:10px;"></span>
+      <p class="muted" style="margin-top:14px;margin-bottom:6px;">For the 📋 KPI tab, also paste the <b>Sales App</b> script /exec URL (the one the sales phones use) and its access code:</p>
+      <input type="text" id="sales-url" placeholder="https://script.google.com/macros/s/…/exec (sales app script)">
+      <input type="text" id="sales-key" placeholder="access code (APP_KEY) — leave blank if not enforced" style="margin-top:6px;">
+      <button onclick="saveSalesUrl()">💾 Save Sales Script</button>
+      <span id="setup-sales-status" class="muted" style="margin-left:10px;"></span>
       <p class="muted" style="margin-top:14px;">Product name mapping and which expense categories count in P&amp;L are edited in the MIS Google Sheet — tabs <b>Product_Map</b> and <b>PnL_Config</b> (created automatically on first run).</p>
     </div>
   </section>
 </main>
 <script>
 const LS_URL='gfmis_url';
-let S={url:localStorage.getItem(LS_URL)||'',data:null,timer:null,smooth:localStorage.getItem('gfmis_smooth')==='1',trendRows:null};
+let S={url:localStorage.getItem(LS_URL)||'',data:null,timer:null,smooth:localStorage.getItem('gfmis_smooth')==='1',trendRows:null,
+  salesUrl:localStorage.getItem('gfmis_sales_url')||'',salesKey:localStorage.getItem('gfmis_sales_key')||'',kpi:null};
 function toggleSmooth(){S.smooth=el('chk-smooth').checked;localStorage.setItem('gfmis_smooth',S.smooth?'1':'0');if(S.data)renderDay(S.data);if(S.trendRows)renderTrend(S.trendRows);}
 const fmt=n=>'₹'+(+n||0).toLocaleString('en-IN');
 const el=id=>document.getElementById(id);
 function todayISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-function showTab(t){['day','trend','month','setup'].forEach(x=>{el('view-'+x).style.display=x===t?'':'none';el('tab-'+x).classList.toggle('on',x===t);});if(t==='trend')loadTrend();if(t==='month'&&!S.month)loadMonth();}
+function showTab(t){['day','trend','month','kpi','setup'].forEach(x=>{el('view-'+x).style.display=x===t?'':'none';el('tab-'+x).classList.toggle('on',x===t);});if(t==='trend')loadTrend();if(t==='month'&&!S.month)loadMonth();if(t==='kpi'&&!S.kpi)loadKPI();}
 function shiftDay(n){const p=el('pick-date');const d=new Date(p.value||todayISO());d.setDate(d.getDate()+n);p.value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');refresh();}
 function saveUrl(){const u=el('mis-url').value.trim();if(!u){el('setup-status').textContent='enter the URL';return;}
   localStorage.setItem(LS_URL,u);S.url=u;el('setup-status').textContent='⏳ testing…';
@@ -338,10 +371,196 @@ function dlCSV(){
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
   a.download='GaavnFresh_PnL_'+d.month+'.csv';a.click();
 }
+// ═══ v108: PRODUCT & CUSTOMER KPI REPORT ═════════════════════════════
+// Orders + customers come from the SALES app script (getMonthOrders /
+// getCustomers); margins come from the MIS script (action=month, byProduct).
+function saveSalesUrl(){
+  const u=el('sales-url').value.trim(), k=el('sales-key').value.trim();
+  localStorage.setItem('gfmis_sales_url',u); localStorage.setItem('gfmis_sales_key',k);
+  S.salesUrl=u; S.salesKey=k;
+  if(!u){ el('setup-sales-status').textContent='enter the URL'; return; }
+  el('setup-sales-status').textContent='⏳ testing…';
+  fetch(u+'?action=getCustomers'+(k?'&key='+encodeURIComponent(k):'')).then(r=>r.json())
+    .then(j=>{ el('setup-sales-status').textContent=j.customers?('✅ connected — '+j.customers.length+' customers'):(j.error?'✗ '+j.error:'✗ unexpected reply'); })
+    .catch(()=>{ el('setup-sales-status').textContent='✗ could not reach'; });
+}
+function kpiISO(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function kpiPreset(n){const to=new Date();const from=new Date();from.setDate(from.getDate()-(n-1));el('kpi-from').value=kpiISO(from);el('kpi-to').value=kpiISO(to);loadKPI();}
+function kpiDay(x){ // normalise any date shape to YYYY-MM-DD (day-first for slashes)
+  x=String(x||'').trim();
+  if(x.indexOf('T')>0){const d=new Date(x);if(!isNaN(d))return kpiISO(d);}
+  const m=x.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(m)return m[3]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0');
+  return x.slice(0,10);
+}
+function kpiMonthsBetween(a,b){const out=[];let d=new Date(a.slice(0,7)+'-01T00:00:00');const end=new Date(b.slice(0,7)+'-01T00:00:00');while(d<=end){out.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));d.setMonth(d.getMonth()+1);}return out;}
+async function kpiFetchMonthOrders(tag){
+  const k=S.salesKey?'&key='+encodeURIComponent(S.salesKey):'';
+  const r=await fetch(S.salesUrl+'?action=getMonthOrders&month='+tag+k,{cache:'no-store'});
+  const j=await r.json(); return (j&&Array.isArray(j.orders))?j.orders:[];
+}
+function kpiGroupOrders(rows,from,to){
+  const map={};
+  rows.forEach(row=>{
+    const oid=String(row['Order ID']||'').trim(); if(!oid) return;
+    const d=kpiDay(row._date||row['Date']); if(!d||d<from||d>to) return;
+    if(!map[oid]) map[oid]={id:oid,date:d,customer:String(row['Customer']||'').replace(/\s+/g,' ').trim(),
+      total:parseFloat(row['Order Total (Rs)']||row['Total (Rs)']||0)||0,items:[]};
+    const prod=String(row['Product']||'').trim();
+    if(prod&&prod!=='(no items)') map[oid].items.push({name:prod,qty:parseFloat(row['Qty'])||0,
+      unit:String(row['Unit']||'').toLowerCase(),amount:parseFloat(row['Amount (Rs)'])||0});
+    if(!map[oid].items.length && row['Items Raw']){
+      try{const p=JSON.parse(row['Items Raw']);if(Array.isArray(p))map[oid].items=p.map(i=>({name:i.name||'',qty:parseFloat(i.qty)||0,unit:String(i.unit||'').toLowerCase(),amount:parseFloat(i.amount)||((parseFloat(i.qty)||0)*(parseFloat(i.rate)||0))}));}catch(e){}
+    }
+  });
+  return Object.values(map);
+}
+function kpiProdAgg(orders){
+  const m={};
+  orders.forEach(o=>o.items.forEach(i=>{
+    if(!i.name)return;
+    if(!m[i.name])m[i.name]={qty:0,amount:0,kgQty:0,kgAmt:0,units:{}};
+    m[i.name].qty+=i.qty; m[i.name].amount+=i.amount||0;
+    m[i.name].units[i.unit]=(m[i.name].units[i.unit]||0)+1;
+    if(i.unit==='kg'){m[i.name].kgQty+=i.qty;m[i.name].kgAmt+=i.amount||0;}
+  }));
+  // orders without item lines: attribute total to '(unitemised)'
+  orders.forEach(o=>{ if(!o.items.length&&o.total>0){ if(!m['(unitemised)'])m['(unitemised)']={qty:0,amount:0,kgQty:0,kgAmt:0,units:{}}; m['(unitemised)'].amount+=o.total; } });
+  return m;
+}
+async function loadKPI(){
+  if(!S.salesUrl){showTab('setup');el('setup-sales-status').textContent='⬅ set the Sales App script URL for the KPI tab';return;}
+  if(!el('kpi-from').value){kpiPreset(30);return;}   // sets dates then re-enters
+  const from=el('kpi-from').value,to=el('kpi-to').value;
+  const days=Math.max(1,Math.round((new Date(to)-new Date(from))/86400000)+1);
+  const pTo=new Date(from);pTo.setDate(pTo.getDate()-1);
+  const pFrom=new Date(pTo);pFrom.setDate(pFrom.getDate()-(days-1));
+  const prevFrom=kpiISO(pFrom),prevTo=kpiISO(pTo);
+  el('kpi-loading').style.display='';el('kpi-content').style.display='none';err('');
+  try{
+    const months=[...new Set(kpiMonthsBetween(prevFrom,to))];
+    const rows=[];
+    for(const t of months){ rows.push(...await kpiFetchMonthOrders(t)); }
+    const cur=kpiGroupOrders(rows,from,to), prev=kpiGroupOrders(rows,prevFrom,prevTo);
+    S.kpi={from,to,prevFrom,prevTo,days,cur,prev,margin:null};
+    renderKPI();
+  }catch(e){err('KPI failed: '+e.message);}
+  el('kpi-loading').style.display='none';el('kpi-content').style.display='';
+}
+function renderKPI(){
+  const K=S.kpi; if(!K)return;
+  const cur=K.cur,prev=K.prev;
+  const rev=cur.reduce((s,o)=>s+o.total,0), prevRev=prev.reduce((s,o)=>s+o.total,0);
+  // ── customer KPIs ──
+  const by={},byPrev={};
+  cur.forEach(o=>{const k=o.customer.toLowerCase();if(!by[k])by[k]={name:o.customer,n:0,rev:0,last:''};by[k].n++;by[k].rev+=o.total;if(o.date>by[k].last)by[k].last=o.date;});
+  prev.forEach(o=>{const k=o.customer.toLowerCase();byPrev[k]=1;});
+  const custs=Object.values(by), active=custs.length;
+  const repeat=custs.filter(c=>c.n>=2).length;
+  const prevActive=Object.keys(byPrev).length;
+  const retained=Object.keys(by).filter(k=>byPrev[k]).length;
+  const retention=prevActive?Math.round(retained/prevActive*100):0;
+  const churn=prevActive?100-retention:0;
+  const aov=cur.length?rev/cur.length:0;
+  const freq=active?cur.length/active:0;
+  const today=todayISO();
+  const dsl=custs.map(c=>Math.round((new Date(today)-new Date(c.last))/86400000));
+  const dslAvg=dsl.length?Math.round(dsl.reduce((a,b)=>a+b,0)/dsl.length):0;
+  const sorted=[...custs].sort((a,b)=>b.rev-a.rev);
+  const top20=sorted.slice(0,20), top20Rev=top20.reduce((s,c)=>s+c.rev,0);
+  const top20Share=rev?Math.round(top20Rev/rev*100):0;
+  const monthlyPerCust=active?(rev/active)/(K.days/30):0;
+  const lifeM=churn>0?Math.min(24,Math.round(100/churn)):24;
+  const clv=Math.round(monthlyPerCust*lifeM);
+  const g=(a,b)=>b?((a-b)/b*100):0;
+  el('kpi-cust-cards').innerHTML=
+    card('Revenue ('+K.days+'d)',fmt(rev),g(rev,prevRev)>=0?'pos':'neg',(g(rev,prevRev)>=0?'▲':'▼')+Math.abs(g(rev,prevRev)).toFixed(1)+'% vs prev '+K.days+'d')+
+    card('Active Customers',active,'',prevActive+' in previous period')+
+    card('Repeat Purchase Rate',(active?Math.round(repeat/active*100):0)+'%','',repeat+' of '+active+' ordered ≥2 times')+
+    card('Customer Retention',retention+'%','',retained+' of '+prevActive+' came back')+
+    card('Customer Churn',churn+'%',churn>30?'neg':'',(prevActive-retained)+' customers lost')+
+    card('Average Order Value','₹'+Math.round(aov).toLocaleString('en-IN'),'',cur.length+' orders')+
+    card('Purchase Frequency',freq.toFixed(1),'','orders per active customer')+
+    card('Avg Days Since Purchase',dslAvg,'','across active customers')+
+    card('Top 20 Contribution',top20Share+'%','',fmt(top20Rev)+' of '+fmt(rev))+
+    card('Customer Lifetime Value','₹'+clv.toLocaleString('en-IN'),'','₹'+Math.round(monthlyPerCust).toLocaleString('en-IN')+'/mo × '+lifeM+' mo (churn-based)');
+  // ── product performance ──
+  const P=kpiProdAgg(cur), PP=kpiProdAgg(prev);
+  const names=Object.keys(P).sort((a,b)=>P[b].amount-P[a].amount);
+  let cum=0;
+  const M=K.margin||{};
+  el('kpi-prod-table').innerHTML=names.length?'<table><tr><th>Product</th><th>Qty</th><th>Sales</th><th>Mix%</th><th>Cum%</th><th>Growth</th><th>ASP</th><th>₹/kg</th><th>GM% (MIS)</th></tr>'+
+    names.map(n=>{const p=P[n];const share=rev?p.amount/rev*100:0;cum+=share;
+      const pr=PP[n];const gr=pr&&pr.amount?((p.amount-pr.amount)/pr.amount*100):(pr?0:null);
+      const asp=p.qty?p.amount/p.qty:0;
+      const rpk=p.kgQty?p.kgAmt/p.kgQty:null;
+      const mm=M[n.toLowerCase()];
+      return '<tr><td>'+n+'</td><td>'+p.qty.toFixed(1)+'</td><td>'+fmt(p.amount)+'</td><td>'+share.toFixed(1)+'%</td><td>'+cum.toFixed(0)+'%</td>'+
+        '<td class="'+(gr===null?'':(gr>=0?'pos':'neg'))+'">'+(gr===null?'NEW':((gr>=0?'▲':'▼')+Math.abs(gr).toFixed(0)+'%'))+'</td>'+
+        '<td>₹'+Math.round(asp).toLocaleString('en-IN')+'</td><td>'+(rpk!==null?('₹'+Math.round(rpk).toLocaleString('en-IN')):'—')+'</td>'+
+        '<td class="'+(mm===undefined?'':(mm>=0?'pos':'neg'))+'">'+(mm===undefined?'—':mm+'%')+'</td></tr>';}).join('')+'</table>'
+    :'<div class="muted">No sales in this period.</div>';
+  el('kpi-margin-note').textContent=K.margin?('GM% from MIS, aggregated over calendar month(s) covering the period.'):'Tap “Load Margins (MIS)” to fill the GM% column (uses the MIS month P&L — takes 15–30s per month).';
+  // ── fast / slow / dead ──
+  const sold=names.filter(n=>P[n].qty>0);
+  const perDay=n=>P[n].qty/K.days;
+  const fast=[...sold].sort((a,b)=>perDay(b)-perDay(a)).slice(0,5);
+  const slow=[...sold].sort((a,b)=>perDay(a)-perDay(b)).slice(0,5);
+  const dead=Object.keys(PP).filter(n=>!P[n]||P[n].qty<=0);
+  el('kpi-fsd').innerHTML=
+    '<b class="mono" style="font-size:11px;">⚡ FAST MOVING (units/day)</b><div>'+ (fast.map(n=>'<span class="chip">'+n+' · '+perDay(n).toFixed(1)+'/d</span>').join('')||'—') +'</div>'+
+    '<b class="mono" style="font-size:11px;">🐌 SLOW MOVING</b><div>'+ (slow.map(n=>'<span class="chip">'+n+' · '+perDay(n).toFixed(2)+'/d</span>').join('')||'—') +'</div>'+
+    '<b class="mono" style="font-size:11px;">💀 DEAD (sold last period, zero now)</b><div>'+ (dead.map(n=>'<span class="chip" style="border-color:var(--red);color:var(--red);">'+n+'</span>').join('')||'<span class="muted">none 🎉</span>') +'</div>';
+  // ── top 20 table ──
+  el('kpi-top20').innerHTML='<table><tr><th>#</th><th>Customer</th><th>Orders</th><th>Revenue</th><th>Share</th><th>Last order</th></tr>'+
+    top20.map((c,i)=>'<tr><td>'+(i+1)+'</td><td>'+c.name+'</td><td>'+c.n+'</td><td>'+fmt(c.rev)+'</td><td>'+(rev?(c.rev/rev*100).toFixed(1):0)+'%</td><td>'+c.last+'</td></tr>').join('')+'</table>';
+  // ── recency buckets ──
+  const buckets=[['0–7d',0,7],['8–14d',8,14],['15–30d',15,30],['31d+',31,99999]];
+  el('kpi-recency').innerHTML='<table><tr>'+buckets.map(b=>'<th>'+b[0]+'</th>').join('')+'</tr><tr>'+
+    buckets.map(b=>'<td><b>'+dsl.filter(x=>x>=b[1]&&x<=b[2]).length+'</b> customers</td>').join('')+'</tr></table>'+
+    '<div class="muted" style="margin-top:6px;">31d+ customers ordered in the period but have gone quiet — worth a call.</div>';
+}
+async function loadKPIMargins(){
+  const K=S.kpi; if(!K){await loadKPI(); if(!S.kpi)return;}
+  if(!S.url){showTab('setup');return;}
+  const btn=el('btn-kpi-margin'); btn.textContent='⏳ loading…';
+  try{
+    const months=kpiMonthsBetween(K.from,K.to);
+    const agg={};
+    for(const t of months){
+      const r=await fetch(S.url+'?action=month&month='+t,{cache:'no-store'});
+      const d=await r.json(); if(d.error) continue;
+      (d.byProduct||[]).forEach(p=>{const k=String(p.sales||'').toLowerCase();
+        if(!agg[k])agg[k]={amt:0,cogs:0};agg[k].amt+=p.amount||0;agg[k].cogs+=p.cogs||0;});
+    }
+    const M={};
+    Object.keys(agg).forEach(k=>{const a=agg[k];if(a.amt>0)M[k]=Math.round((a.amt-a.cogs)/a.amt*100);});
+    S.kpi.margin=M; renderKPI();
+  }catch(e){err('Margin load failed: '+e.message);}
+  btn.textContent='🧀 Load Margins (MIS)';
+}
+function dlKPICSV(){
+  const K=S.kpi; if(!K){loadKPI();return;}
+  const P=kpiProdAgg(K.cur),PP=kpiProdAgg(K.prev);
+  const rev=K.cur.reduce((s,o)=>s+o.total,0);
+  const L=[['GAAVN FRESH - KPI REPORT',K.from+' to '+K.to+' (vs '+K.prevFrom+' to '+K.prevTo+')'],[],
+    ['PRODUCT','QTY','SALES','MIX %','GROWTH %','ASP','REALIZATION/KG','GM% (MIS)']];
+  Object.keys(P).sort((a,b)=>P[b].amount-P[a].amount).forEach(n=>{const p=P[n];const pr=PP[n];
+    L.push([n,p.qty,Math.round(p.amount),rev?(p.amount/rev*100).toFixed(1):0,
+      pr&&pr.amount?(((p.amount-pr.amount)/pr.amount)*100).toFixed(1):'NEW',
+      p.qty?Math.round(p.amount/p.qty):0,p.kgQty?Math.round(p.kgAmt/p.kgQty):'',
+      (K.margin&&K.margin[n.toLowerCase()]!==undefined)?K.margin[n.toLowerCase()]:'']);});
+  const csv='\ufeff'+L.map(r=>r.map(csvEsc).join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download='GaavnFresh_KPI_'+K.from+'_'+K.to+'.csv';a.click();
+}
+
 // init
 el('pick-date').value=todayISO();
 el('pick-month').value=todayISO().slice(0,7);
 el('mis-url').value=S.url;
+el('sales-url').value=S.salesUrl; el('sales-key').value=S.salesKey;
 if(S.url){refresh();}else{showTab('setup');}
 S.timer=setInterval(()=>{if(S.url&&el('view-day').style.display!=='none')refresh();},5*60*1000);
 </script>
