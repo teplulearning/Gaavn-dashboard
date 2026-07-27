@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="GF Dashboard">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><rect width='180' height='180' rx='40' fill='%231A1208'/><text x='90' y='118' font-size='72' text-anchor='middle' fill='%23E8870A' font-family='Arial' font-weight='bold'>GF</text></svg>">
 <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%20%22Gaavn%20Fresh%20Dashboard%22%2C%20%22short_name%22%3A%20%22GF%20Dash%22%2C%20%22start_url%22%3A%20%22.%22%2C%20%22display%22%3A%20%22standalone%22%2C%20%22background_color%22%3A%20%22%231A1208%22%2C%20%22theme_color%22%3A%20%22%231A1208%22%2C%20%22icons%22%3A%20%5B%7B%22src%22%3A%20%22data%3Aimage/svg%2Bxml%2C%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27180%27%20height%3D%27180%27%3E%3Crect%20width%3D%27180%27%20height%3D%27180%27%20rx%3D%2740%27%20fill%3D%27%25231A1208%27/%3E%3Ctext%20x%3D%2790%27%20y%3D%27118%27%20font-size%3D%2772%27%20text-anchor%3D%27middle%27%20fill%3D%27%2523E8870A%27%20font-family%3D%27Arial%27%20font-weight%3D%27bold%27%3EGF%3C/text%3E%3C/svg%3E%22%2C%20%22sizes%22%3A%20%22192x192%22%2C%20%22type%22%3A%20%22image/svg%2Bxml%22%7D%5D%7D">
-<title>Gaavn Fresh — MIS Dashboard v108</title>
+<title>Gaavn Fresh — MIS Dashboard v110</title>
 <style>
 :root{--ink:#1A1208;--cream:#FBF6EC;--surface:#FFFFFF;--surface2:#F7F1E4;--border:#E8DFC9;
 --green:#2E7D32;--red:#C62828;--amber:#C8830A;--blue:#1A527A;--muted:#8A8070;--accent:#E8870A;}
@@ -66,7 +66,7 @@ tr:nth-child(even) td{background:var(--surface2);}
 <body>
 <header>
   <div class="logo">GF</div>
-  <div><h1>Gaavn Fresh — MIS Dashboard</h1><div class="sub">P&amp;L · CASH FLOW · PRODUCT MARGINS · KPI · v108</div></div>
+  <div><h1>Gaavn Fresh — MIS Dashboard</h1><div class="sub">P&amp;L · CASH FLOW · PRODUCT MARGINS · KPI · v110</div></div>
   <div class="datebar">
     <button onclick="shiftDay(-1)">◀</button>
     <input type="date" id="pick-date" onchange="refresh()">
@@ -165,7 +165,9 @@ tr:nth-child(even) td{background:var(--surface2);}
       <input type="text" id="sales-url" placeholder="https://script.google.com/macros/s/…/exec (sales app script)">
       <input type="text" id="sales-key" placeholder="access code (APP_KEY) — leave blank if not enforced" style="margin-top:6px;">
       <button onclick="saveSalesUrl()">💾 Save Sales Script</button>
+      <button onclick="copySetupLink()" style="background:var(--blue);">🔗 Copy setup link for phones</button>
       <span id="setup-sales-status" class="muted" style="margin-left:10px;"></span>
+      <p class="muted" style="margin-top:6px;">Note: setup is saved <b>per device</b>. Each phone needs these URLs once — either paste them there, or open the copied setup link on the phone (works when the dashboard is opened from a hosted link).</p>
       <p class="muted" style="margin-top:14px;">Product name mapping and which expense categories count in P&amp;L are edited in the MIS Google Sheet — tabs <b>Product_Map</b> and <b>PnL_Config</b> (created automatically on first run).</p>
     </div>
   </section>
@@ -429,7 +431,20 @@ function kpiProdAgg(orders){
   return m;
 }
 async function loadKPI(){
-  if(!S.salesUrl){showTab('setup');el('setup-sales-status').textContent='⬅ set the Sales App script URL for the KPI tab';return;}
+  if(!S.salesUrl){
+    // v109: was showTab('setup') — on phones the instant bounce made the KPI
+    // tab look dead. Setup is saved PER DEVICE, so a phone needs it once too.
+    el('kpi-loading').style.display='none';
+    el('kpi-content').style.display='';
+    el('kpi-cust-cards').innerHTML='';
+    ['kpi-prod-table','kpi-fsd','kpi-top20','kpi-recency'].forEach(id=>{const e=el(id);if(e)e.innerHTML='';});
+    el('kpi-prod-table').innerHTML='<div style="background:#FFF3CD;border:1.5px solid var(--amber);border-radius:10px;padding:14px;font-size:13px;line-height:1.6;">'+
+      '📱 <b>This device is not connected to the sales data yet.</b><br>'+
+      'Settings are saved per device — the desktop being set up does not set up this phone.<br>'+
+      'Go to <b>⚙ SETUP</b> and paste the Sales App script URL + access code here too (same values as on the desktop).<br><br>'+
+      '<button onclick="showTab(\'setup\')" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-family:monospace;font-size:12px;font-weight:700;cursor:pointer;">Open Setup</button></div>';
+    return;
+  }
   if(!el('kpi-from').value){kpiPreset(30);return;}   // sets dates then re-enters
   const from=el('kpi-from').value,to=el('kpi-to').value;
   const days=Math.max(1,Math.round((new Date(to)-new Date(from))/86400000)+1);
@@ -487,17 +502,24 @@ function renderKPI(){
   // ── product performance ──
   const P=kpiProdAgg(cur), PP=kpiProdAgg(prev);
   const names=Object.keys(P).sort((a,b)=>P[b].amount-P[a].amount);
+  // v110: Mix% divided item sales by ORDER-total revenue — the two differ on
+  // discounted / partly-itemised orders, so Cum% could pass 100%. Use the
+  // item-level total as denominator: the column now closes at exactly 100%.
+  const prodRev=names.reduce((t,n)=>t+P[n].amount,0)||1;
   let cum=0;
   const M=K.margin||{};
+  const mk=x=>String(x||'').replace(/\s+/g,' ').trim().toLowerCase();
   el('kpi-prod-table').innerHTML=names.length?'<table><tr><th>Product</th><th>Qty</th><th>Sales</th><th>Mix%</th><th>Cum%</th><th>Growth</th><th>ASP</th><th>₹/kg</th><th>GM% (MIS)</th></tr>'+
-    names.map(n=>{const p=P[n];const share=rev?p.amount/rev*100:0;cum+=share;
+    names.map(n=>{const p=P[n];const share=p.amount/prodRev*100;cum+=share;
       const pr=PP[n];const gr=pr&&pr.amount?((p.amount-pr.amount)/pr.amount*100):(pr?0:null);
       const asp=p.qty?p.amount/p.qty:0;
+      // v110: label ASP with the product's own selling unit (jar, kg, ltr…)
+      const unit=Object.keys(p.units||{}).sort((a,b)=>p.units[b]-p.units[a])[0]||'';
       const rpk=p.kgQty?p.kgAmt/p.kgQty:null;
-      const mm=M[n.toLowerCase()];
-      return '<tr><td>'+n+'</td><td>'+p.qty.toFixed(1)+'</td><td>'+fmt(p.amount)+'</td><td>'+share.toFixed(1)+'%</td><td>'+cum.toFixed(0)+'%</td>'+
+      const mm=M[mk(n)];
+      return '<tr><td>'+n+'</td><td>'+p.qty.toFixed(1)+(unit?' '+unit:'')+'</td><td>'+fmt(p.amount)+'</td><td>'+share.toFixed(1)+'%</td><td>'+Math.min(100,cum).toFixed(0)+'%</td>'+
         '<td class="'+(gr===null?'':(gr>=0?'pos':'neg'))+'">'+(gr===null?'NEW':((gr>=0?'▲':'▼')+Math.abs(gr).toFixed(0)+'%'))+'</td>'+
-        '<td>₹'+Math.round(asp).toLocaleString('en-IN')+'</td><td>'+(rpk!==null?('₹'+Math.round(rpk).toLocaleString('en-IN')):'—')+'</td>'+
+        '<td>'+(p.qty?('₹'+Math.round(asp).toLocaleString('en-IN')+(unit?'/'+unit:'')):'—')+'</td><td>'+(rpk!==null?('₹'+Math.round(rpk).toLocaleString('en-IN')):'—')+'</td>'+
         '<td class="'+(mm===undefined?'':(mm>=0?'pos':'neg'))+'">'+(mm===undefined?'—':mm+'%')+'</td></tr>';}).join('')+'</table>'
     :'<div class="muted">No sales in this period.</div>';
   el('kpi-margin-note').textContent=K.margin?('GM% from MIS, aggregated over calendar month(s) covering the period.'):'Tap “Load Margins (MIS)” to fill the GM% column (uses the MIS month P&L — takes 15–30s per month).';
@@ -526,17 +548,22 @@ async function loadKPIMargins(){
   const btn=el('btn-kpi-margin'); btn.textContent='⏳ loading…';
   try{
     const months=kpiMonthsBetween(K.from,K.to);
-    const agg={};
+    const agg={}; let fails=0;
+    const mk=x=>String(x||'').replace(/\s+/g,' ').trim().toLowerCase();
     for(const t of months){
-      const r=await fetch(S.url+'?action=month&month='+t,{cache:'no-store'});
-      const d=await r.json(); if(d.error) continue;
-      (d.byProduct||[]).forEach(p=>{const k=String(p.sales||'').toLowerCase();
-        if(!agg[k])agg[k]={amt:0,cogs:0};agg[k].amt+=p.amount||0;agg[k].cogs+=p.cogs||0;});
+      el('kpi-margin-note').textContent='⏳ loading MIS month '+t+' (15–30s)…';
+      try{
+        const r=await fetch(S.url+'?action=month&month='+t,{cache:'no-store'});
+        const d=await r.json(); if(d.error){fails++;continue;}
+        (d.byProduct||[]).forEach(p=>{const k=mk(p.sales);
+          if(!agg[k])agg[k]={amt:0,cogs:0};agg[k].amt+=p.amount||0;agg[k].cogs+=p.cogs||0;});
+      }catch(e){fails++;}
     }
     const M={};
     Object.keys(agg).forEach(k=>{const a=agg[k];if(a.amt>0)M[k]=Math.round((a.amt-a.cogs)/a.amt*100);});
     S.kpi.margin=M; renderKPI();
-  }catch(e){err('Margin load failed: '+e.message);}
+    if(fails) el('kpi-margin-note').textContent='⚠ '+fails+' MIS month call(s) failed (slow connection or MIS URL) — GM% may be partial. Tap again to retry.';
+  }catch(e){err('Margin load failed: '+e.message);el('kpi-margin-note').textContent='⚠ Margin load failed: '+e.message;}
   btn.textContent='🧀 Load Margins (MIS)';
 }
 function dlKPICSV(){
@@ -554,6 +581,24 @@ function dlKPICSV(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
   a.download='GaavnFresh_KPI_'+K.from+'_'+K.to+'.csv';a.click();
+}
+
+// v109: allow ?mis=…&sales=…&key=… (or #cfg=…) to preconfigure a device —
+// lets the desktop's Setup be transferred to phones with one link.
+try{
+  const q=new URLSearchParams(location.search||location.hash.replace(/^#/,'?'));
+  const _m=q.get('mis'),_s=q.get('sales'),_k=q.get('key');
+  if(_m){localStorage.setItem(LS_URL,_m);S.url=_m;}
+  if(_s){localStorage.setItem('gfmis_sales_url',_s);S.salesUrl=_s;}
+  if(_k!==null&&_k!==undefined&&_k!==''){localStorage.setItem('gfmis_sales_key',_k);S.salesKey=_k;}
+  if((_m||_s)&&history.replaceState)history.replaceState(null,'',location.pathname);
+}catch(e){}
+function copySetupLink(){
+  const base=location.origin&&location.origin!=='null'?location.href.split('?')[0].split('#')[0]:'';
+  const link=(base||'GaavnFresh_Dashboard.html')+'?mis='+encodeURIComponent(S.url)+'&sales='+encodeURIComponent(S.salesUrl)+'&key='+encodeURIComponent(S.salesKey);
+  const done=()=>{el('setup-sales-status').textContent='✅ setup link copied — open it once on each phone';};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(link).then(done).catch(()=>{prompt('Copy this link:',link);});}
+  else prompt('Copy this link:',link);
 }
 
 // init
