@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="GF Dashboard">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><rect width='180' height='180' rx='40' fill='%231A1208'/><text x='90' y='118' font-size='72' text-anchor='middle' fill='%23E8870A' font-family='Arial' font-weight='bold'>GF</text></svg>">
 <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%20%22Gaavn%20Fresh%20Dashboard%22%2C%20%22short_name%22%3A%20%22GF%20Dash%22%2C%20%22start_url%22%3A%20%22.%22%2C%20%22display%22%3A%20%22standalone%22%2C%20%22background_color%22%3A%20%22%231A1208%22%2C%20%22theme_color%22%3A%20%22%231A1208%22%2C%20%22icons%22%3A%20%5B%7B%22src%22%3A%20%22data%3Aimage/svg%2Bxml%2C%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27180%27%20height%3D%27180%27%3E%3Crect%20width%3D%27180%27%20height%3D%27180%27%20rx%3D%2740%27%20fill%3D%27%25231A1208%27/%3E%3Ctext%20x%3D%2790%27%20y%3D%27118%27%20font-size%3D%2772%27%20text-anchor%3D%27middle%27%20fill%3D%27%2523E8870A%27%20font-family%3D%27Arial%27%20font-weight%3D%27bold%27%3EGF%3C/text%3E%3C/svg%3E%22%2C%20%22sizes%22%3A%20%22192x192%22%2C%20%22type%22%3A%20%22image/svg%2Bxml%22%7D%5D%7D">
-<title>Gaavn Fresh — MIS Dashboard v111</title>
+<title>Gaavn Fresh — MIS Dashboard v120</title>
 <style>
 :root{--ink:#1A1208;--cream:#FBF6EC;--surface:#FFFFFF;--surface2:#F7F1E4;--border:#E8DFC9;
 --green:#2E7D32;--red:#C62828;--amber:#C8830A;--blue:#1A527A;--muted:#8A8070;--accent:#E8870A;}
@@ -66,7 +66,7 @@ tr:nth-child(even) td{background:var(--surface2);}
 <body>
 <header>
   <div class="logo">GF</div>
-  <div><h1>Gaavn Fresh — MIS Dashboard</h1><div class="sub">P&amp;L · CASH FLOW · PRODUCT MARGINS · KPI · v111</div></div>
+  <div><h1>Gaavn Fresh — MIS Dashboard</h1><div class="sub">P&amp;L · CASH FLOW · PRODUCT MARGINS · KPI · RECONCILE · SHEET · v120</div></div>
   <div class="datebar">
     <button onclick="shiftDay(-1)">◀</button>
     <input type="date" id="pick-date" onchange="refresh()">
@@ -79,6 +79,8 @@ tr:nth-child(even) td{background:var(--surface2);}
   <button id="tab-trend" onclick="showTab('trend')">📈 TREND</button>
   <button id="tab-month" onclick="showTab('month')">📅 MONTH P&L</button>
   <button id="tab-kpi" onclick="showTab('kpi')">📋 KPI</button>
+  <button id="tab-recon" onclick="showTab('recon')">🧾 RECONCILE</button>
+  <button id="tab-sheet" onclick="showTab('sheet')">📄 SHEET</button>
   <button id="tab-setup" onclick="showTab('setup')">⚙ SETUP</button>
 </div>
 <main>
@@ -154,6 +156,55 @@ tr:nth-child(even) td{background:var(--surface2);}
     </div>
   </section>
 
+  <section id="view-recon" style="display:none;">
+    <div class="panel">
+      <h3>🧾 CUSTOMER RECONCILIATION — app vs KhataBook</h3>
+      <div class="muted" style="margin-bottom:10px;line-height:1.6;">
+        Every figure below is read live from the Google Sheet, not from a phone. Work down the list with KhataBook open,
+        type each customer's KhataBook closing balance, and the difference appears instantly. Your entries are saved on
+        this computer, so you can do it over several sittings.
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+        <label class="mono" style="font-size:10px;color:var(--muted);">From <input type="date" id="rc-from" style="font-family:monospace;font-size:12px;padding:5px;border:1.5px solid var(--border);border-radius:8px;background:var(--cream);"></label>
+        <label class="mono" style="font-size:10px;color:var(--muted);">To <input type="date" id="rc-to" style="font-family:monospace;font-size:12px;padding:5px;border:1.5px solid var(--border);border-radius:8px;background:var(--cream);"></label>
+        <button onclick="loadRecon()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-family:monospace;font-size:11px;font-weight:700;cursor:pointer;">📥 Load from Sheet</button>
+        <button onclick="refreshRecon()" title="Re-read the Sheet right now" style="background:var(--green,#2E7D32);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-family:monospace;font-size:11px;font-weight:700;cursor:pointer;">⟳ Refresh</button>
+        <span id="rc-fresh" class="mono" style="font-size:10px;color:var(--muted);"></span>
+        <button onclick="reconFilter('all')"   class="chip" style="cursor:pointer;">All</button>
+        <button onclick="reconFilter('diff')"  class="chip" style="cursor:pointer;">Only mismatches</button>
+        <button onclick="reconFilter('todo')"  class="chip" style="cursor:pointer;">Not yet checked</button>
+        <button onclick="dlReconCSV()" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-family:monospace;font-size:11px;font-weight:700;cursor:pointer;">⬇ CSV</button>
+      </div>
+      <div class="spin" id="rc-loading" style="display:none;">⏳ Reading customers, orders and payments from the Sheet…</div>
+      <div id="rc-summary"></div>
+      <div id="rc-table" style="overflow-x:auto;"></div>
+    </div>
+  </section>
+
+  <section id="view-sheet" style="display:none;">
+    <div class="panel">
+      <h3>📄 ORDERS SHEET — exact replica</h3>
+      <div class="muted" style="margin-bottom:10px;line-height:1.6;">
+        The same rows as your <b>Orders_YYYY-MM</b> tab, same columns, same order, with a TOTAL line after every day —
+        but sorted properly and never rearranged under you. <b>Read-only:</b> nothing here can change the Sheet.
+        Rows with a problem are marked; use the ⚑ filter to see only those.
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+        <label class="mono" style="font-size:10px;color:var(--muted);">Month <input type="month" id="sh-month" style="font-family:monospace;font-size:12px;padding:5px;border:1.5px solid var(--border);border-radius:8px;background:var(--cream);"></label>
+        <button onclick="loadSheetMirror()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-family:monospace;font-size:11px;font-weight:700;cursor:pointer;">📥 Load</button>
+        <button onclick="refreshSheetMirror()" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-family:monospace;font-size:11px;font-weight:700;cursor:pointer;">⟳ Refresh</button>
+        <span id="sh-fresh" class="mono" style="font-size:10px;color:var(--muted);"></span>
+        <input type="text" id="sh-find" oninput="renderSheetMirror()" placeholder="find customer / order id…" style="font-family:monospace;font-size:11px;padding:6px 9px;border:1.5px solid var(--border);border-radius:8px;background:var(--cream);min-width:190px;">
+        <button class="chip" id="shf-all"  onclick="shFilter('all')">All rows</button>
+        <button class="chip" id="shf-flag" onclick="shFilter('flag')">⚑ Only problems</button>
+        <button onclick="dlSheetCSV()" style="background:var(--ink);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-family:monospace;font-size:11px;font-weight:700;cursor:pointer;">⬇ CSV</button>
+      </div>
+      <div id="sh-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;"></div>
+      <div class="spin" id="sh-loading" style="display:none;">⏳ reading the Sheet…</div>
+      <div id="sh-table" style="overflow-x:auto;"></div>
+    </div>
+  </section>
+
   <section id="view-setup" style="display:none;">
     <div class="panel setup">
       <h3>⚙ SETUP</h3>
@@ -167,6 +218,7 @@ tr:nth-child(even) td{background:var(--surface2);}
       <button onclick="saveSalesUrl()">💾 Save Sales Script</button>
       <button onclick="copySetupLink()" style="background:var(--blue);">🔗 Copy setup link for phones</button>
       <span id="setup-sales-status" class="muted" style="margin-left:10px;"></span>
+      <div id="setup-saved-state" class="muted" style="margin-top:10px;font-family:monospace;font-size:11px;"></div>
       <p class="muted" style="margin-top:6px;">Note: setup is saved <b>per device</b>. Each phone needs these URLs once — either paste them there, or open the copied setup link on the phone (works when the dashboard is opened from a hosted link).</p>
       <p class="muted" style="margin-top:14px;">Product name mapping and which expense categories count in P&amp;L are edited in the MIS Google Sheet — tabs <b>Product_Map</b> and <b>PnL_Config</b> (created automatically on first run).</p>
     </div>
@@ -180,11 +232,19 @@ function toggleSmooth(){S.smooth=el('chk-smooth').checked;localStorage.setItem('
 const fmt=n=>'₹'+(+n||0).toLocaleString('en-IN');
 const el=id=>document.getElementById(id);
 function todayISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-function showTab(t){['day','trend','month','kpi','setup'].forEach(x=>{el('view-'+x).style.display=x===t?'':'none';el('tab-'+x).classList.toggle('on',x===t);});if(t==='trend')loadTrend();if(t==='month'&&!S.month)loadMonth();if(t==='kpi'&&!S.kpi)loadKPI();}
+function showTab(t){['day','trend','month','kpi','recon','sheet','setup'].forEach(x=>{el('view-'+x).style.display=x===t?'':'none';el('tab-'+x).classList.toggle('on',x===t);});if(t==='trend')loadTrend();if(t==='month'&&!S.month)loadMonth();if(t==='kpi'&&!S.kpi)loadKPI();if(t==='recon'&&!S.recon)initRecon();if(t==='sheet'&&!S.sheet)initSheet();}
 function shiftDay(n){const p=el('pick-date');const d=new Date(p.value||todayISO());d.setDate(d.getDate()+n);p.value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');refresh();}
 function saveUrl(){const u=el('mis-url').value.trim();if(!u){el('setup-status').textContent='enter the URL';return;}
   localStorage.setItem(LS_URL,u);S.url=u;el('setup-status').textContent='⏳ testing…';
-  fetch(u+'?action=ping').then(r=>r.json()).then(j=>{el('setup-status').textContent=j.pong?'✅ connected (script v'+j.v+')':'✗ unexpected reply';if(j.pong){showTab('day');refresh();}})
+  fetch(u+'?action=ping').then(r=>r.json()).then(j=>{
+    if(j.pong){ el('setup-status').textContent='✅ connected (script v'+j.v+')'; showTab('day'); refresh(); return; }
+    // v112: a sales-script URL pasted here answers getCustomers but not ping
+    fetch(u+'?action=getCustomers').then(r2=>r2.json()).then(j2=>{
+      el('setup-status').innerHTML=j2&&j2.customers
+        ? '<b style="color:var(--red);">✗ This is the Sales App script URL, not the MIS script.</b> It belongs in the lower box.'
+        : '✗ unexpected reply';
+    }).catch(()=>{el('setup-status').textContent='✗ unexpected reply';});
+  })
   .catch(()=>{el('setup-status').textContent='✗ could not reach — check deployment access = Anyone';});}
 function err(msg){el('errbox').textContent=msg;el('errbox').style.display=msg?'':'none';}
 async function refresh(){
@@ -378,13 +438,139 @@ function dlCSV(){
 // getCustomers); margins come from the MIS script (action=month, byProduct).
 function saveSalesUrl(){
   const u=el('sales-url').value.trim(), k=el('sales-key').value.trim();
+  const st=el('setup-sales-status');
+  if(!u){ st.textContent='enter the URL'; return; }
+  // v112: the two script URLs are easy to paste into the wrong box — the old
+  // error was a bare "unknown action", which told the user nothing.
+  if(S.url && u===S.url){
+    st.innerHTML='<b style="color:var(--red);">✗ This is the SAME URL as the MIS box above.</b> The Sales App uses a different deployment — copy it from the sales app’s Setup screen.';
+    return;
+  }
+  const warn=_urlWarning(u); u=_normExecUrl(u);
+  el('sales-url').value=u;
   localStorage.setItem('gfmis_sales_url',u); localStorage.setItem('gfmis_sales_key',k);
   S.salesUrl=u; S.salesKey=k;
-  if(!u){ el('setup-sales-status').textContent='enter the URL'; return; }
-  el('setup-sales-status').textContent='⏳ testing…';
-  fetch(u+'?action=getCustomers'+(k?'&key='+encodeURIComponent(k):'')).then(r=>r.json())
-    .then(j=>{ el('setup-sales-status').textContent=j.customers?('✅ connected — '+j.customers.length+' customers'):(j.error?'✗ '+j.error:'✗ unexpected reply'); })
-    .catch(()=>{ el('setup-sales-status').textContent='✗ could not reach'; });
+  st.textContent='⏳ testing…';
+  // v116 FIX: this test used to fetch WITHOUT cache:'no-store'. Apps Script
+  // /exec replies are cacheable, so once a rejection was cached the browser
+  // kept replaying it — the code looked "still wrong" after it had been fixed.
+  const testUrl = u+'?action=getCustomers'+(k?'&key='+encodeURIComponent(k):'')+'&_t='+Date.now();
+  fetch(testUrl,{cache:'no-store'}).then(r=>r.json())
+    .then(j=>{
+      if(j.customers){ st.innerHTML='✅ connected — '+j.customers.length+' customers'; return; }
+      const e=String(j.error||'');
+      if(/unknown action/i.test(e)){
+        st.innerHTML='<b style="color:var(--red);">✗ This looks like the MIS script URL, not the Sales App script.</b> The two boxes are swapped — the MIS URL goes in the box above, the sales-phone script URL goes here.';
+      } else if(/unauthor/i.test(e)){
+        st.innerHTML='<b style="color:var(--red);">✗ The script rejected this code.</b>'+_keyForensics(k,u);
+      } else { st.textContent='✗ '+(e||'unexpected reply'); }
+    })
+    .catch(()=>{ st.textContent='✗ could not reach — check the deployment is set to “Anyone”'; });
+}
+// v116: when a code is rejected, don't just say "wrong" — show exactly what
+// was sent, flag characters that copy-paste commonly corrupts, and hand over a
+// link that tests the script directly so the dashboard is taken out of the loop.
+function _keyForensics(k,u){
+  const bad=[];
+  for(const ch of k){ const c=ch.codePointAt(0);
+    if(c>126||c<32) bad.push(ch+' (U+'+c.toString(16).toUpperCase().padStart(4,'0')+')'); }
+  const smart=/[\u2018\u2019\u201C\u201D\u2013\u2014]/.test(k);
+  const direct=u+'?action=getCustomers&key='+encodeURIComponent(k)+'&_t='+Date.now();
+  return '<div style="margin-top:8px;font-size:12px;line-height:1.75;font-weight:400;color:var(--ink);">'
+    +'Sent <b>'+k.length+'</b> characters'+(k?': <code>'+k.slice(0,2)+'…'+k.slice(-2)+'</code>':' (empty)')+'.'
+    +(bad.length?'<br><b style="color:var(--red);">⚠ Contains characters that are not plain text: '+bad.join(', ')
+        +'</b> — retype the code by hand instead of pasting.':'')
+    +(smart?'<br><b style="color:var(--red);">⚠ Contains a curly quote or long dash</b> — Apps Script may have autocorrected it.':'')
+    +'<br><br><b>Settle it in one click:</b> <a href="'+direct.replace(/"/g,'&quot;')+'" target="_blank" rel="noopener">open this URL in a new tab</a>.'
+    +'<br>&nbsp;&nbsp;• Shows a list of customers → the code is right and the problem is here, not the script. Press Save again.'
+    +'<br>&nbsp;&nbsp;• Shows <code>unauthorized</code> → the live script\'s APP_KEY is not this code.'
+    +'<br><br><b>Then check the script itself.</b> Open the Apps Script editor and press Ctrl+F for <code>var APP_KEY</code>:'
+    +'<br>&nbsp;&nbsp;• <b>More than one line matches</b> → that is the cause. In JavaScript the <i>last</i> <code>var</code> wins, so a leftover placeholder line further down is the code actually in force. Delete every line except yours. (This exact fault was found in your script once before.)'
+    +'<br>&nbsp;&nbsp;• <b>One line, and it matches</b> → the edit was never published. Deploy → Manage deployments → ✏️ edit → Version: <b>New version</b> → Deploy. Never "New deployment".'
+    +'<br><br>Easiest safe source for the code: open the sales app on a phone that is working, ⚙ Setup, and copy it from there — that value is proven to be accepted.'
+    +'</div>';
+}
+// v117: stop guessing. Call the script several ways, show the RAW reply for
+// each, and derive the verdict from what actually came back.
+// v118: EVERY call did  S.salesUrl + '?action=…'  with no sanitising. If the
+// stored URL already carried a query string — which it does if it was copied
+// out of a browser address bar after a manual test — the result is a URL with
+// two '?' and a REPEATED key parameter. Apps Script's e.parameter returns the
+// FIRST value for a repeated parameter, so the stale key in the stored URL wins
+// and a perfectly correct code typed into Setup can never take effect.
+function _normExecUrl(u){
+  u=String(u||'').trim();
+  u=u.split('#')[0].split('?')[0];       // drop fragment and any query string
+  u=u.replace(/\/+$/,'');                // drop trailing slashes
+  return u;
+}
+function _urlWarning(raw){
+  const r=String(raw||'');
+  if(r.indexOf('?')>=0 || r.indexOf('#')>=0)
+    return 'the saved URL had a query string attached to it (everything from the "?" onward) — that is exactly what breaks the access code. It has been trimmed to the plain /exec address.';
+  if(r && !/\/exec$/.test(_normExecUrl(r)))
+    return 'the saved URL does not end in /exec. A /dev URL or a Sheet link will not work — copy the web-app /exec URL from Deploy → Manage deployments.';
+  return '';
+}
+async function _probe(url){
+  try{
+    const r=await fetch(url+(url.indexOf('?')>=0?'&':'?')+'_t='+Date.now(),{cache:'no-store'});
+    const txt=await r.text();
+    let j=null; try{ j=JSON.parse(txt); }catch(e){}
+    return {ok:!!(j&&j.customers), n:(j&&j.customers)?j.customers.length:0,
+            err:(j&&j.error)?String(j.error):'', raw:txt.slice(0,160)};
+  }catch(e){ return {ok:false,n:0,err:'NETWORK: '+e.message,raw:''}; }
+}
+async function diagnoseKey(){
+  const box=el('rc-diag'); const u=S.salesUrl||''; const k=S.salesKey||'';
+  if(!u){ box.innerHTML='<p style="color:var(--red);"><b>No Sales App script URL is saved at all.</b> ⚙ SETUP → paste it.</p>'; return; }
+  const uWarn=_urlWarning(u);
+  const clean=k.replace(/[^\x20-\x7E]/g,'').trim();
+  const tests=[['A','no code sent at all',''],['B','the code exactly as stored here',k]];
+  if(clean!==k && clean) tests.push(['C','same code, invisible characters stripped',clean]);
+  box.innerHTML='<p class="mono" style="font-size:12px;">running '+tests.length+' tests…</p>';
+  const out=[];
+  for(const [id,label,key] of tests){
+    out.push([id,label,key,await _probe(_normExecUrl(u)+'?action=getCustomers'+(key?'&key='+encodeURIComponent(key):''))]);
+  }
+  let h='<div style="margin-top:12px;background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:12px;font-size:12px;line-height:1.7;color:var(--ink);font-weight:400;">';
+  const shown=(u+'?action=getCustomers'+(k?'&key='+k:'')).replace(/[<>]/g,'');
+  h+='<div class="mono" style="font-size:11px;color:var(--muted);word-break:break-all;">'
+     +'<b>This is the exact address being called:</b><br>'+shown
+     +'<br><br>stored code: <b>'+k.length+'</b> characters'+(k?' ('+k.slice(0,2)+'…'+k.slice(-2)+')':' — EMPTY')
+     +'</div>'
+     +(uWarn?'<div style="background:#FDECEA;border:1.5px solid var(--red);border-radius:8px;padding:9px;margin-top:8px;"><b style="color:var(--red);">⚠ Found it — '+uWarn+'</b></div>':'')
+     +'<hr style="border:none;border-top:1px solid var(--border);margin:8px 0;">';
+  out.forEach(([id,label,key,r])=>{
+    h+='<div style="margin-bottom:7px;"><b>'+id+'. '+label+'</b> → '
+      +(r.ok?'<b style="color:var(--green,#2E7D32);">✓ '+r.n+' customers</b>'
+            :'<b style="color:var(--red);">✗ '+(r.err||'no usable reply')+'</b>')
+      +'<div class="mono" style="font-size:10px;color:var(--muted);">'+r.raw.replace(/[<>]/g,'')+'</div></div>';
+  });
+  const win=out.find(x=>x[3].ok);
+  const noKey=out[0][3];
+  h+='<hr style="border:none;border-top:1px solid var(--border);margin:8px 0;"><b>Verdict</b><br>';
+  if(win && win[0]==='A'){
+    h+='Enforcement is <b>off</b> on the live script — no code is needed. Clear the access-code box in ⚙ SETUP and save; everything will work.';
+  } else if(win){
+    h+='Test <b>'+win[0]+'</b> worked. The code was right but had hidden characters in it. '
+      +'<button onclick="_fixKey(\''+win[2].replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="background:var(--green,#2E7D32);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-family:monospace;font-size:11px;font-weight:700;cursor:pointer;margin-top:6px;">Save the clean code and reload</button>';
+  } else if(uWarn){
+    h+='The stored URL was malformed — '+uWarn+' It has now been repaired. Close this and press <b>⟳ Refresh</b>; if it still fails, run this diagnosis again and the URL line above will be clean.';
+  } else if(/unauth/i.test(noKey.err)){
+    h+='Every variation was refused, including sending no code at all. That rules out this dashboard — <b>the fault is in the script.</b> The live <code>APP_KEY</code> is not the code you think it is. Two causes, in order of likelihood:'
+      +'<br><br><b>1. A duplicate <code>var APP_KEY</code> line.</b> Open the Apps Script editor, Ctrl+F for <code>var APP_KEY</code>. If it appears more than once, the <i>last</i> one wins — a leftover <code>CHANGE-ME-TO-A-LONG-RANDOM-CODE</code> placeholder further down is the code actually in force. Delete every copy except yours. Do the same for <code>var ENFORCE_KEY</code>. This exact fault was already found in your script once.'
+      +'<br><br><b>2. The edit was never published.</b> Deploy → Manage deployments → ✏️ edit → Version: <b>New version</b> → Deploy. Editing alone changes nothing that is live.'
+      +'<br><br>Then press 🔍 Diagnose again.';
+  } else {
+    h+='The script did not reply in a way this page understands. Raw text is shown above — check the Sales script URL in ⚙ SETUP and that its deployment access is set to <b>Anyone</b>.';
+  }
+  box.innerHTML=h+'</div>';
+}
+function _fixKey(k){
+  localStorage.setItem('gfmis_sales_key',k); S.salesKey=k;
+  el('rc-diag').innerHTML='<p style="color:var(--green,#2E7D32);"><b>Saved.</b> Reloading…</p>';
+  setTimeout(()=>loadRecon(),400);
 }
 function kpiISO(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function kpiPreset(n){const to=new Date();const from=new Date();from.setDate(from.getDate()-(n-1));el('kpi-from').value=kpiISO(from);el('kpi-to').value=kpiISO(to);loadKPI();}
@@ -579,6 +765,472 @@ async function loadKPIMargins(){
   }catch(e){err('Margin load failed: '+e.message);el('kpi-margin-note').textContent='⚠ Margin load failed: '+e.message;}
   btn.textContent='🧀 Load Margins (MIS)';
 }
+
+// ══ v113: CUSTOMER RECONCILIATION — verify the app against KhataBook ═══
+// Reads customers, orders and payments straight from the Google Sheet (never
+// from a phone's cache) and lays each customer out as:
+//   opening balance + sales in period − collected in period = closing
+// You type the KhataBook closing figure beside it and the difference shows.
+// Entries are kept on this computer so the check can be done over several days.
+const LS_RECON='gfmis_recon_kb';
+let _reconFilter='all';
+function _kb(){ try{ return JSON.parse(localStorage.getItem(LS_RECON)||'{}'); }catch(e){ return {}; } }
+function _kbSave(m){ try{ localStorage.setItem(LS_RECON, JSON.stringify(m)); }catch(e){} }
+function initRecon(){
+  const t=new Date(), f=new Date(t.getFullYear(), t.getMonth(), 1);
+  if(!el('rc-from').value) el('rc-from').value=kpiISO(f);
+  if(!el('rc-to').value)   el('rc-to').value=kpiISO(t);
+  el('rc-table').innerHTML='<div class="muted" style="padding:14px;">Pick a date range and tap <b>Load from Sheet</b>.</div>';
+}
+function _rcNorm(d){ d=String(d||''); if(d.indexOf('T')>0){ try{ const x=new Date(d);
+    if(!isNaN(x)) return kpiISO(x); }catch(e){} } return d.slice(0,10); }
+async function loadRecon(){
+  if(!S.salesUrl){ showTabSetupHint(); return; }
+  const from=el('rc-from').value, to=el('rc-to').value;
+  if(!from||!to){ alert('Pick both dates'); return; }
+  el('rc-loading').style.display=''; el('rc-table').innerHTML=''; el('rc-summary').innerHTML='';
+  const key=S.salesKey?'&key='+encodeURIComponent(S.salesKey):'';
+  try{
+    // 1. customers (opening balance + as-of date)
+    const rc=await fetch(S.salesUrl+'?action=getCustomers'+key,{cache:'no-store'});
+    const jc=await rc.json();
+    // v114 FIX: this used to fall back to an empty list on ANY bad reply, so an
+    // "unauthorized" (access code missing or wrong) looked identical to "no
+    // data" — the screen just showed 0 customers with no explanation.
+    if(jc && jc.error){
+      el('rc-loading').style.display='none';
+      el('rc-table').innerHTML='<div style="background:#FDECEA;border:1.5px solid var(--red);border-radius:10px;padding:14px;font-size:13px;line-height:1.7;">'
+        +'<b>The Sheet refused the request: "'+jc.error+'"</b><br>'
+        +(String(jc.error).toLowerCase().indexOf('unauth')>=0
+          ? 'The access code this dashboard is sending is not the one the live script expects. Press the button below and it will test every possibility and tell you exactly where the fault is.'
+            +'<div style="margin-top:10px;"><button onclick="diagnoseKey()" style="background:var(--ink,#222);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-family:monospace;font-size:12px;font-weight:700;cursor:pointer;">🔍 Diagnose this now</button></div>'
+            +'<div id="rc-diag"></div>'
+          : 'Check the Sales App script URL in <b>⚙ SETUP</b>, and that the script is deployed.')
+        +'</div>';
+      return;
+    }
+    const custs=(jc&&jc.customers)?jc.customers:[];
+    if(!custs.length){
+      el('rc-loading').style.display='none';
+      el('rc-table').innerHTML='<div style="background:#FFF3CD;border:1.5px solid var(--amber);border-radius:10px;padding:14px;font-size:13px;">'
+        +'The Sheet returned <b>0 customers</b>. The URL and code are accepted, but the Customers tab looks empty — check it in the spreadsheet.</div>';
+      return;
+    }
+    // 2. orders + payments for every month the range touches
+    const months=[...new Set(kpiMonthsBetween(from,to))];
+    const orders=[], pays=[]; const notes=[];
+    for(const m of months){
+      try{ const r=await fetch(S.salesUrl+'?action=getMonthOrders&month='+m+key,{cache:'no-store'});
+        const j=await r.json();
+        if(j && j.error) notes.push(m+' orders: '+j.error);
+        (j&&j.orders?j.orders:[]).forEach(x=>orders.push(x)); }catch(e){ notes.push(m+' orders: unreachable'); }
+      try{ const r2=await fetch(S.salesUrl+'?action=getMonthPayments&month='+m+key,{cache:'no-store'});
+        const j2=await r2.json();
+        if(j2 && j2.error) notes.push(m+' payments: '+j2.error);
+        (j2&&j2.payments?j2.payments:[]).forEach(x=>pays.push(x)); }catch(e){ notes.push(m+' payments: unreachable'); }
+    }
+    S.reconDiag={custs:custs.length, orderRows:orders.length, payRows:pays.length, months:months, notes:notes};
+    // 3. fold orders by customer (group the per-item rows by Order ID first)
+    const byOrder={};
+    orders.forEach(row=>{
+      const id=String(row['Order ID']||'').trim();
+      if(!id||id.indexOf('TOTAL')===0) return;
+      const d=_rcNorm(row._date||row['Date']); if(!d||d<from||d>to) return;
+      if(!byOrder[id]) byOrder[id]={cust:String(row['Customer']||'').trim(), total:0, paid:0, date:d};
+      const t=parseFloat(row['Order Total (Rs)']); if(!isNaN(t)&&t>byOrder[id].total) byOrder[id].total=t;
+      const pa=parseFloat(row['Payment Amt']);     if(!isNaN(pa)&&pa>byOrder[id].paid) byOrder[id].paid=pa;
+    });
+    const key2=n=>String(n||'').replace(/\s+/g,' ').trim().toLowerCase();
+    const agg={};
+    const ensure=n=>{ const k=key2(n); if(!agg[k]) agg[k]={name:n,open:0,sales:0,coll:0,orders:0,asOf:''}; return agg[k]; };
+    custs.forEach(c=>{ const a=ensure(c.name); a.open=parseFloat(c.balance)||0; a.asOf=c.balanceAsOf||''; a.id=c.id; });
+    Object.values(byOrder).forEach(o=>{ const a=ensure(o.cust); a.sales+=o.total; a.coll+=o.paid; a.orders++; });
+    // ledger payments — skip ones already counted on the order row
+    const seen={};
+    Object.values(byOrder).forEach(o=>{ if(o.paid>0){ const k=key2(o.cust)+'|'+Math.round(o.paid); seen[k]=(seen[k]||0)+1; } });
+    pays.forEach(p=>{
+      const d=_rcNorm(p['Date']); if(!d||d<from||d>to) return;
+      const nm=String(p['Customer']||'').trim(); const amt=parseFloat(p['Amount (Rs)'])||0;
+      const k=key2(nm)+'|'+Math.round(amt);
+      if(seen[k]>0){ seen[k]--; return; }          // already on the order row
+      ensure(nm).coll+=amt;
+    });
+    S.recon={from:from,to:to,rows:Object.values(agg).filter(a=>a.open||a.sales||a.coll)};
+    S.reconAt=Date.now(); _tickFresh();
+    renderRecon();
+    const D=S.reconDiag||{};
+    const diag='<div class="muted" style="margin-top:8px;font-family:monospace;font-size:11px;">'
+      +'read from Sheet — '+D.custs+' customers · '+D.orderRows+' order rows · '+D.payRows+' payment rows'
+      +' · months: '+(D.months||[]).join(', ')
+      +(D.notes&&D.notes.length?('<br><span style="color:var(--red);">'+D.notes.join(' | ')+'</span>'):'')
+      +'</div>';
+    el('rc-table').insertAdjacentHTML('beforeend', diag);
+  }catch(e){ el('rc-table').innerHTML='<div style="color:var(--red);padding:14px;">Could not read the Sheet — check the Sales script URL and access code in Setup.</div>'; }
+  el('rc-loading').style.display='none';
+}
+function reconFilter(f){ _reconFilter=f; renderRecon(); }
+function saveKB(name, val){
+  const m=_kb(); const k=String(name).toLowerCase();
+  if(val===''||val===null||val===undefined) delete m[k]; else m[k]=parseFloat(val)||0;
+  _kbSave(m); renderRecon();
+}
+function renderRecon(){
+  const R=S.recon; if(!R) return;
+  const kb=_kb();
+  let rows=R.rows.map(a=>{
+    const closing=a.open+a.sales-a.coll;
+    const k=String(a.name).toLowerCase();
+    const has=Object.prototype.hasOwnProperty.call(kb,k);
+    const diff=has?(closing-kb[k]):null;
+    return Object.assign({},a,{closing:closing, kb:has?kb[k]:'', diff:diff, checked:has});
+  });
+  if(_reconFilter==='diff') rows=rows.filter(r=>r.checked && Math.abs(r.diff)>=1);
+  if(_reconFilter==='todo') rows=rows.filter(r=>!r.checked);
+  rows.sort((a,b)=>Math.abs(b.diff||0)-Math.abs(a.diff||0) || b.closing-a.closing);
+  const all=R.rows.map(a=>({c:a.open+a.sales-a.coll, k:String(a.name).toLowerCase()}));
+  const done=all.filter(x=>Object.prototype.hasOwnProperty.call(kb,x.k));
+  const bad=done.filter(x=>Math.abs(x.c-kb[x.k])>=1);
+  const totApp=all.reduce((s,x)=>s+x.c,0);
+  const totKB=done.reduce((s,x)=>s+kb[x.k],0);
+  const doneApp=done.reduce((s,x)=>s+x.c,0);
+  el('rc-summary').innerHTML=
+    '<div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">'
+    +card('Customers',R.rows.length,'',R.from+' → '+R.to)
+    +card('Checked',done.length+' / '+R.rows.length,'', (R.rows.length-done.length)+' still to do')
+    +card('Matching',(done.length-bad.length),'pos','within ₹1')
+    +card('Mismatched',bad.length,bad.length?'neg':'', bad.length?'need investigation':'none')
+    +card('App closing (checked)',fmt(Math.round(doneApp)),'','KhataBook: '+fmt(Math.round(totKB)))
+    +card('Difference',fmt(Math.round(doneApp-totKB)),Math.abs(doneApp-totKB)<1?'pos':'neg','on the checked ones')
+    +'</div>';
+  el('rc-table').innerHTML='<table><tr>'
+    +['Customer','Opening','Sales','Collected','Closing (app)','KhataBook','Difference']
+      .map((h,i)=>'<th style="text-align:'+(i?'right':'left')+';">'+h+'</th>').join('')
+    +'</tr>'
+    + (rows.length? rows.map(r=>{
+        const d=r.checked?r.diff:null;
+        const col=d===null?'':(Math.abs(d)<1?'var(--green)':'var(--red)');
+        return '<tr'+(d!==null&&Math.abs(d)>=1?' style="background:#FDECEA;"':'')+'>'
+          +'<td>'+r.name+(r.asOf?'<br><span class="muted" style="font-size:9px;">opening as of '+r.asOf+'</span>':'')+'</td>'
+          +'<td style="text-align:right;">'+fmt(Math.round(r.open))+'</td>'
+          +'<td style="text-align:right;">'+fmt(Math.round(r.sales))+'</td>'
+          +'<td style="text-align:right;">'+fmt(Math.round(r.coll))+'</td>'
+          +'<td style="text-align:right;font-weight:800;">'+fmt(Math.round(r.closing))+'</td>'
+          +'<td style="text-align:right;"><input type="number" value="'+r.kb+'" placeholder="—" '
+            +'onchange="saveKB(\''+String(r.name).replace(/'/g,"\\'")+'\', this.value)" '
+            +'style="width:110px;text-align:right;font-family:monospace;font-size:12px;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;background:var(--cream);"></td>'
+          +'<td style="text-align:right;font-weight:800;color:'+col+';">'+(d===null?'—':(d>0?'+':'')+fmt(Math.round(d)))+'</td>'
+          +'</tr>';
+      }).join('') : '<tr><td colspan="7" class="muted" style="padding:14px;">Nothing to show for this filter.</td></tr>')
+    +'</table>'
+    +'<div class="muted" style="margin-top:8px;line-height:1.6;font-size:11px;">'
+    +'<b>Closing (app)</b> = opening balance + sales in the period − collected in the period. '
+    +'A positive <b>Difference</b> means the app thinks the customer owes MORE than KhataBook does. '
+    +'Common causes: the customer exists twice in the app under two spellings (merge them in the sales app), '
+    +'a payment recorded in KhataBook but not yet in the app, or an opening balance whose as-of date differs.'
+    +'</div>';
+}
+function dlReconCSV(){
+  const R=S.recon; if(!R){ alert('Load the data first'); return; }
+  const kb=_kb(); const L=[['GAAVN FRESH — RECONCILIATION vs KHATABOOK', R.from+' to '+R.to],[],
+    ['Customer','Opening','Sales','Collected','Closing (app)','KhataBook','Difference']];
+  R.rows.forEach(a=>{
+    const c=a.open+a.sales-a.coll, k=String(a.name).toLowerCase();
+    const has=Object.prototype.hasOwnProperty.call(kb,k);
+    L.push([a.name,Math.round(a.open),Math.round(a.sales),Math.round(a.coll),Math.round(c),
+            has?kb[k]:'', has?Math.round(c-kb[k]):'']);
+  });
+  const csv='\ufeff'+L.map(r=>r.map(csvEsc).join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download='Gaavn_Reconciliation_'+R.from+'_'+R.to+'.csv'; a.click();
+}
+// ── v115: manual + on-focus refresh ─────────────────────────────────────────
+// Google Sheets cannot push to this page, so there is no such thing as a true
+// live feed. What we can do is (a) re-read on demand, and (b) re-read the
+// moment you come back to this window — which is when you actually look.
+function _fresh(ms){
+  const s=Math.round(ms/1000);
+  if(s<10) return 'just now';
+  if(s<60) return s+'s ago';
+  const m=Math.round(s/60);
+  if(m<60) return m+' min ago';
+  return Math.round(m/60)+' hr ago';
+}
+function _tickFresh(){
+  const e=el('rc-fresh'); if(!e) return;
+  if(!S.reconAt){ e.textContent=''; return; }
+  const age=Date.now()-S.reconAt;
+  e.textContent='read '+_fresh(age);
+  // amber once it is old enough that the sales person could have changed things
+  e.style.color = age>3*60*1000 ? 'var(--amber,#B8860B)' : 'var(--muted)';
+}
+setInterval(_tickFresh, 5000);
+
+let _refreshing=false;
+async function refreshRecon(){
+  if(_refreshing) return;
+  _refreshing=true;
+  const e=el('rc-fresh'); if(e){ e.textContent='reading Sheet…'; e.style.color='var(--blue)'; }
+  try{ await loadRecon(); } finally { _refreshing=false; _tickFresh(); }
+}
+
+// Re-read when you switch back to this window/tab. Throttled to 10s so that
+// alt-tabbing repeatedly does not fire a burst of Sheet calls, and it never
+// fetches a tab you have not opened yet (S.recon is null until first load).
+let _lastAutoRead=0;
+function _onWindowFocus(){
+  if(el('view-recon').style.display==='none') return;   // only the tab you are on
+  if(!S.recon) return;                                   // never loaded — don't surprise-fetch
+  if(Date.now()-_lastAutoRead < 10000) return;           // throttle
+  _lastAutoRead=Date.now();
+  refreshRecon();
+}
+window.addEventListener('focus', _onWindowFocus);
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState==='visible') _onWindowFocus();
+});
+
+
+// ════════════════════════════════════════════════════════════════════════
+// v119 — ORDERS SHEET MIRROR (read-only)
+// Renders Orders_YYYY-MM line for line, with a computed TOTAL row per day.
+// Nothing in here writes to the Sheet; there is deliberately no such path.
+// ════════════════════════════════════════════════════════════════════════
+const SH_COLS=['Order ID','Date','Customer','Category','Area','Status','Order Total (Rs)',
+  'Payment Mode','Payment Amt','Product','Qty','Unit','Rate (Rs)','Amount (Rs)',
+  'Notes','Created By','Synced At'];
+const SH_NUM={'Order Total (Rs)':1,'Payment Amt':1,'Qty':1,'Rate (Rs)':1,'Amount (Rs)':1};
+let _shFilter='all';
+
+function shFilter(f){ _shFilter=f;
+  el('shf-all').classList.toggle('on',f==='all');
+  el('shf-flag').classList.toggle('on',f==='flag');
+  renderSheetMirror(); }
+
+function initSheet(){
+  if(!S.salesUrl){ el('sh-table').innerHTML='<div style="background:#FFF3CD;border:1.5px solid var(--amber);border-radius:10px;padding:14px;font-size:13px;">Paste the <b>Sales App script URL</b> and access code in <b>⚙ SETUP</b> first.</div>'; return; }
+  if(!el('sh-month').value) el('sh-month').value=todayISO().slice(0,7);
+  shFilter('all');
+  loadSheetMirror();
+}
+
+function _shNum(v){ const n=parseFloat(v); return isNaN(n)?0:n; }
+function _shTxt(v){ if(v===null||v===undefined) return ''; if(v instanceof Date) return kpiISO(v); return String(v); }
+
+async function loadSheetMirror(){
+  const month=el('sh-month').value; if(!month) return;
+  const key=S.salesKey?'&key='+encodeURIComponent(S.salesKey):'';
+  const base=_normExecUrl(S.salesUrl);
+  el('sh-loading').style.display=''; el('sh-table').innerHTML=''; el('sh-summary').innerHTML='';
+  try{
+    const r=await fetch(base+'?action=getMonthOrders&month='+month+key+'&_t='+Date.now(),{cache:'no-store'});
+    const j=await r.json();
+    el('sh-loading').style.display='none';
+    if(j && j.error){
+      el('sh-table').innerHTML='<div style="background:#FDECEA;border:1.5px solid var(--red);border-radius:10px;padding:14px;font-size:13px;">'
+        +'<b>The Sheet refused the request: "'+j.error+'"</b><br>Run 🔍 Diagnose on the RECONCILE tab.</div>';
+      return;
+    }
+    const rows=(j&&j.orders)?j.orders:[];
+    // deleted-order tombstones: an id here that is still in Orders_* is a phantom
+    let deleted=new Set();
+    try{
+      const rd=await fetch(base+'?action=getDeletedOrders'+key+'&_t='+Date.now(),{cache:'no-store'});
+      const jd=await rd.json();
+      (jd&&jd.deleted?jd.deleted:[]).forEach(d=>deleted.add(String(d.id).trim()));
+    }catch(e){}
+    S.sheet=_shAnalyse(rows,deleted,month);
+    S.sheetAt=Date.now(); _shTickFresh();
+    renderSheetMirror();
+  }catch(e){
+    el('sh-loading').style.display='none';
+    el('sh-table').innerHTML='<div style="color:var(--red);padding:14px;">Could not read the Sheet — '+e.message+'</div>';
+  }
+}
+async function refreshSheetMirror(){ await loadSheetMirror(); }
+
+// ── the analysis: every flag is derived from the rows, never assumed ──────
+function _shAnalyse(rows,deleted,month){
+  const byId={}, order=[];
+  rows.forEach((r,i)=>{
+    const id=_shTxt(r['Order ID']).trim();
+    const d=kpiDay(r._date||r['Date']);
+    if(!byId[id]){ byId[id]={id:id,date:d,cust:_shTxt(r['Customer']).replace(/\s+/g,' ').trim(),
+      totals:[],paids:[],lineSum:0,rows:[],flags:[]}; order.push(id); }
+    const o=byId[id];
+    const t=_shNum(r['Order Total (Rs)']); if(t) o.totals.push(t);
+    const p=_shNum(r['Payment Amt']);      if(p) o.paids.push(p);
+    if(_shTxt(r['Product']).trim()) o.lineSum+=_shNum(r['Amount (Rs)']);
+    r._seq=i; o.rows.push(r);
+  });
+
+  // per-order faults
+  Object.values(byId).forEach(o=>{
+    o.total=o.totals.length?Math.max.apply(null,o.totals):0;
+    o.paid =o.paids.length ?Math.max.apply(null,o.paids ):0;
+    if(deleted.has(o.id)) o.flags.push({k:'phantom',t:'DELETED on a phone but still in the Sheet — this order is inflating your totals'});
+    const distinct=[...new Set(o.totals)];
+    if(distinct.length>1) o.flags.push({k:'conflict',t:'the same Order ID carries two different Order Totals ('+distinct.join(' and ')+') — a superseded row was left behind'});
+    if(o.lineSum>0 && o.total>0 && Math.abs(o.lineSum-o.total)>1)
+      o.flags.push({k:'mismatch',t:'Order Total is '+Math.round(o.total)+' but the product lines add up to '+Math.round(o.lineSum)});
+  });
+
+  // same customer, same amount, same day, two different order ids
+  const dayKey={};
+  Object.values(byId).forEach(o=>{
+    if(!o.total) return;
+    const k=o.date+'|'+o.cust.toLowerCase()+'|'+Math.round(o.total);
+    (dayKey[k]=dayKey[k]||[]).push(o);
+  });
+  Object.values(dayKey).forEach(g=>{ if(g.length>1) g.forEach(o=>
+    o.flags.push({k:'dupe',t:'same customer, same amount, same day as order '+g.filter(x=>x!==o).map(x=>x.id).join(', ')+' — check one is not a duplicate'})); });
+
+  // group by day, preserving sheet row order
+  const days={};
+  order.forEach(id=>{ const o=byId[id]; (days[o.date]=days[o.date]||[]).push(o); });
+  const dayList=Object.keys(days).filter(d=>d).sort().map(d=>{
+    const os=days[d];
+    const sales=os.reduce((s,o)=>s+o.total,0), coll=os.reduce((s,o)=>s+o.paid,0);
+    const clean=os.filter(o=>!o.flags.some(f=>f.k==='phantom'));
+    return {date:d, orders:os, sales:sales, coll:coll, n:os.length,
+            cleanSales:clean.reduce((s,o)=>s+o.total,0), cleanN:clean.length};
+  });
+  const all=Object.values(byId);
+  const mSales=dayList.reduce((s,d)=>s+d.sales,0), mColl=dayList.reduce((s,d)=>s+d.coll,0);
+  const mClean=dayList.reduce((s,d)=>s+d.cleanSales,0), mCleanN=dayList.reduce((s,d)=>s+d.cleanN,0);
+  return {month:month, days:dayList, rowCount:rows.length, orderCount:all.length,
+    mSales:mSales, mColl:mColl, mCleanSales:mClean, mCleanN:mCleanN,
+    phantom:all.filter(o=>o.flags.some(f=>f.k==='phantom')).length,
+    conflict:all.filter(o=>o.flags.some(f=>f.k==='conflict')).length,
+    mismatch:all.filter(o=>o.flags.some(f=>f.k==='mismatch')).length,
+    dupe:all.filter(o=>o.flags.some(f=>f.k==='dupe')).length};
+}
+
+function _shChip(n,label,colour){
+  return '<div class="card" style="min-width:110px;padding:10px 12px;'+(n?'border-color:'+colour+';':'')+'">'
+    +'<div class="mono" style="font-size:9px;color:var(--muted);letter-spacing:.5px;">'+label+'</div>'
+    +'<div style="font-size:20px;font-weight:800;'+(n?'color:'+colour+';':'')+'">'+n+'</div></div>';
+}
+function _shMoney(n){ return Math.round(n||0).toLocaleString('en-IN'); }
+
+function renderSheetMirror(){
+  const D=S.sheet; if(!D) return;
+  const q=(el('sh-find').value||'').trim().toLowerCase();
+  el('sh-summary').innerHTML=
+     _shChip(D.rowCount,'SHEET ROWS','var(--ink)')
+    +_shChip(D.orderCount,'ORDERS','var(--ink)')
+    +_shChip(D.days.length,'DAYS','var(--ink)')
+    +_shChip('₹'+_shMoney(D.mSales),'MONTH SALES','var(--green)')
+    +_shChip('₹'+_shMoney(D.mColl),'MONTH COLLECTED','var(--blue)')
+    +_shChip(D.phantom,'DELETED, STILL HERE','var(--red)')
+    +_shChip(D.conflict,'CONFLICTING TOTALS','var(--red)')
+    +_shChip(D.mismatch,"TOTAL ≠ LINES",'var(--amber)')
+    +_shChip(D.dupe,'POSSIBLE DUPLICATES','var(--amber)');
+
+  let h='<table style="width:100%;border-collapse:collapse;font-size:11px;font-family:monospace;white-space:nowrap;">';
+  h+='<thead><tr style="background:#1A3A1F;color:#fff;">'
+    +'<th style="padding:6px 8px;text-align:left;">⚑</th>'
+    +SH_COLS.map(c=>'<th style="padding:6px 8px;text-align:'+(SH_NUM[c]?'right':'left')+';">'+c+'</th>').join('')
+    +'</tr></thead><tbody>';
+
+  let shown=0;
+  D.days.forEach(day=>{
+    let dayRows='';
+    day.orders.forEach(o=>{
+      const flagged=o.flags.length>0;
+      if(_shFilter==='flag' && !flagged) return;
+      if(q && o.cust.toLowerCase().indexOf(q)<0 && o.id.toLowerCase().indexOf(q)<0) return;
+      const worst=o.flags.some(f=>f.k==='phantom'||f.k==='conflict')?'red':(flagged?'amber':'');
+      const bg = worst==='red'?'#FDECEA':(worst==='amber'?'#FFF8E1':'');
+      const tip=o.flags.map(f=>f.t).join(' · ').replace(/"/g,'&quot;');
+      const cellBg = bg?'background:'+bg+' !important;':'';
+      o.rows.forEach((r,ri)=>{
+        shown++;
+        dayRows+='<tr>'
+          +'<td style="padding:5px 8px;'+cellBg+'" title="'+tip+'">'+(ri===0&&flagged?(worst==='red'?'<b style="color:var(--red);">⚑</b>':'<b style="color:var(--amber);">⚑</b>'):'')+'</td>'
+          +SH_COLS.map(c=>{
+              const v=r[c];
+              const txt=SH_NUM[c]?(_shNum(v)?_shMoney(_shNum(v)):''):_shTxt(c==='Date'?kpiDay(r._date||v):v);
+              return '<td style="padding:5px 8px;text-align:'+(SH_NUM[c]?'right':'left')+';'+cellBg+'">'+txt.replace(/[<>]/g,'')+'</td>';
+            }).join('')
+          +'</tr>';
+      });
+      if(flagged){
+        dayRows+='<tr><td style="'+(cellBg||'background:#FFF8E1 !important;')+'"></td><td colspan="'+SH_COLS.length+'" '
+          +'style="padding:4px 8px 8px;font-size:10px;'+(cellBg||'background:#FFF8E1 !important;')+'color:'+(worst==='red'?'var(--red)':'var(--amber)')+';white-space:normal;">↳ '
+          +o.flags.map(f=>f.t).join('<br>↳ ').replace(/[<]/g,'')+'</td></tr>';
+      }
+    });
+    if(!dayRows) return;
+    h+='<tr><td colspan="'+(SH_COLS.length+1)+'" style="padding:10px 8px 4px;font-weight:800;font-size:12px;color:var(--ink);">'+day.date+'</td></tr>';
+    h+=dayRows;
+    h+=_shTotalRow('TOTAL:'+day.date, day.date, day.n+' orders', day.sales, day.coll,
+        (day.cleanN!==day.n?('⚠ excluding '+(day.n-day.cleanN)+' deleted order(s): ₹'+_shMoney(day.cleanSales)):''),
+        '#1A3A1F', '13px');
+  });
+  if(shown){
+    const lbl=(_shFilter==='flag'||q)?'MONTH TOTAL (whole month, not just the rows shown)':'MONTH TOTAL';
+    h+=_shTotalRow(lbl, D.month, D.orderCount+' orders · '+D.days.length+' days', D.mSales, D.mColl,
+        (D.mCleanN!==D.orderCount?('⚠ excluding '+(D.orderCount-D.mCleanN)+' deleted order(s): ₹'+_shMoney(D.mCleanSales)):''),
+        '#0E2612', '15px');
+  }
+  h+='</tbody></table>';
+  if(!shown) h='<div class="muted" style="padding:20px;text-align:center;">Nothing matches this filter.</div>';
+  el('sh-table').innerHTML=h
+    +'<div class="muted" style="margin-top:8px;font-size:11px;">Day TOTAL is computed from these rows the same way the script computes it — '
+    +'highest Order Total and highest Payment Amt per Order ID, so a superseded duplicate row cannot inflate it. '
+    +'If your Sheet’s own TOTAL line differs from the one here, the Sheet’s is the stale one: run 🔁 rebuildAllDayTotals.</div>';
+}
+
+// v120: every cell carries its own background/colour, so no stylesheet rule
+// can wash the row out.
+function _shTotalRow(label, date, mid, sales, coll, note, bg, size){
+  const c='padding:8px;background:'+bg+' !important;color:#fff;font-weight:800;font-size:'+size+';';
+  return '<tr>'
+    +'<td style="'+c+'"></td>'
+    +'<td style="'+c+'">'+label+'</td>'
+    +'<td style="'+c+'">'+date+'</td>'
+    +'<td style="'+c+'" colspan="4">'+mid+'</td>'
+    +'<td style="'+c+'text-align:right;">₹'+_shMoney(sales)+'</td>'
+    +'<td style="'+c+'"></td>'
+    +'<td style="'+c+'text-align:right;">₹'+_shMoney(coll)+'</td>'
+    +'<td style="'+c+'font-weight:600;font-size:11px;" colspan="'+(SH_COLS.length-9)+'">'+note+'</td>'
+    +'</tr>';
+}
+function _shTickFresh(){
+  const e=el('sh-fresh'); if(!e) return;
+  if(!S.sheetAt){ e.textContent=''; return; }
+  const age=Date.now()-S.sheetAt;
+  e.textContent='read '+_fresh(age);
+  e.style.color = age>3*60*1000 ? 'var(--amber)' : 'var(--muted)';
+}
+setInterval(_shTickFresh,5000);
+
+function dlSheetCSV(){
+  const D=S.sheet; if(!D){ loadSheetMirror(); return; }
+  const L=[['GAAVN FRESH — Orders_'+D.month+' replica','generated '+new Date().toLocaleString('en-IN')],[],
+           ['FLAG'].concat(SH_COLS)];
+  D.days.forEach(day=>{
+    day.orders.forEach(o=>{
+      o.rows.forEach((r,ri)=>L.push([ri===0?o.flags.map(f=>f.k).join('+'):''].concat(
+        SH_COLS.map(c=>SH_NUM[c]?(_shNum(r[c])||''):_shTxt(c==='Date'?kpiDay(r._date||r[c]):r[c])))));
+    });
+    L.push(['','TOTAL:'+day.date,day.date,day.n+' orders','','',Math.round(day.sales),'',Math.round(day.coll)]);
+    L.push([]);
+  });
+  L.push(['','MONTH TOTAL',D.month,D.orderCount+' orders','','',Math.round(D.mSales),'',Math.round(D.mColl)]);
+  const csv='﻿'+L.map(r=>r.map(csvEsc).join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download='GaavnFresh_OrdersSheet_'+D.month+'.csv'; a.click();
+}
+
+function showTabSetupHint(){
+  el('rc-table').innerHTML='<div style="background:#FFF3CD;border:1.5px solid var(--amber);border-radius:10px;padding:14px;font-size:13px;">'
+    +'This screen reads the sales data directly from your Google Sheet. Paste the <b>Sales App script URL</b> and access code in '
+    +'<b>⚙ SETUP</b> first.</div>';
+}
+
 function dlKPICSV(){
   const K=S.kpi; if(!K){loadKPI();return;}
   const P=kpiProdAgg(K.cur),PP=kpiProdAgg(K.prev);
@@ -603,6 +1255,9 @@ try{
   const _m=q.get('mis'),_s=q.get('sales'),_k=q.get('key');
   if(_m){localStorage.setItem(LS_URL,_m);S.url=_m;}
   if(_s){localStorage.setItem('gfmis_sales_url',_s);S.salesUrl=_s;}
+  // v118: repair a URL saved by an earlier build before it is ever used
+  const _fixed=_normExecUrl(S.salesUrl);
+  if(_fixed!==S.salesUrl){ localStorage.setItem('gfmis_sales_url',_fixed); S.salesUrl=_fixed; }
   if(_k!==null&&_k!==undefined&&_k!==''){localStorage.setItem('gfmis_sales_key',_k);S.salesKey=_k;}
   if((_m||_s)&&history.replaceState)history.replaceState(null,'',location.pathname);
 }catch(e){}
@@ -614,11 +1269,21 @@ function copySetupLink(){
   else prompt('Copy this link:',link);
 }
 
+// v112: show at a glance what this device actually has saved — an empty
+// field after a reload means localStorage didn't persist (common when the
+// dashboard is opened straight from a file:// path).
+function showSavedState(){
+  const box=el('setup-saved-state'); if(!box) return;
+  const tick=v=>v?'<span style="color:var(--green);">✔ saved</span>':'<span style="color:var(--red);">✘ not saved on this device</span>';
+  box.innerHTML='MIS script: '+tick(S.url)+' &nbsp;·&nbsp; Sales script: '+tick(S.salesUrl)+' &nbsp;·&nbsp; Access code: '+tick(S.salesKey);
+}
+
 // init
 el('pick-date').value=todayISO();
 el('pick-month').value=todayISO().slice(0,7);
 el('mis-url').value=S.url;
 el('sales-url').value=S.salesUrl; el('sales-key').value=S.salesKey;
+showSavedState();
 if(S.url){refresh();}else{showTab('setup');}
 S.timer=setInterval(()=>{if(S.url&&el('view-day').style.display!=='none')refresh();},5*60*1000);
 </script>
