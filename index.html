@@ -118,7 +118,7 @@ tr:nth-child(even) td{background:var(--surface2);}
 
 <header>
   <div class="logo">GF</div>
-  <div><h1>Gaavn Fresh — MIS Dashboard</h1><div class="sub">P&amp;L · CASH FLOW · PRODUCT MARGINS · KPI · RECONCILE · BANK · SHEET · v125</div></div>
+  <div><h1>Gaavn Fresh — MIS Dashboard</h1><div class="sub">P&amp;L · CASH FLOW · PRODUCT MARGINS · KPI · RECONCILE · BANK · SHEET · v126</div></div>
   <div class="datebar">
     <button onclick="shiftDay(-1)">◀</button>
     <input type="date" id="pick-date" onchange="refresh()">
@@ -943,6 +943,8 @@ function card2(label,val,cls){ return '<div style="flex:1;min-width:130px;backgr
   +'<div style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:0.5px;">'+label+'</div>'
   +'<div class="'+cls+'" style="font-size:20px;font-weight:800;font-family:monospace;">'+fmt(val)+'</div></div>'; }
 function _vflag(id,val,tol){ const e=el(id); if(!e)return; e.textContent=fmt(val); e.className=Math.abs(val)<=(tol||100)?'pos':'neg'; }
+function _pending(id,msg){ const e=el(id); if(!e)return; e.textContent=msg; e.className=''; e.style.color='var(--muted)'; e.style.fontWeight='600'; e.style.fontSize='11px'; }
+function _clearPending(id){ const e=el(id); if(!e)return; e.style.color=''; e.style.fontSize=''; }
 function renderBankTotals(){
   const B=S.bank; if(!B) return;
   const upi=B.byAcct.Kotak, bank=B.byAcct.HDFC, cash=B.byAcct.Cash, other=B.byAcct.Other||0;
@@ -954,20 +956,27 @@ function renderBankTotals(){
   _v('bk-landed',landed);
   const gap=available-landed;
   _v('bk-gap',gap);
+  // tolerance scales with size so small fee-sized gaps don't scream 'leakage'
+  const tol=Math.max(300, collected*0.003);
+  // banks not entered yet -> don't alarm
+  const banksEntered = (bkGet('k_act')>0 || bkGet('h_act')>0 || bkGet('i_act')>0);
   const leak=gap-bkGet('fees');
-  _vflag('bk-leak',leak,150);
+  if(!banksEntered){ _pending('bk-leak','— enter bank credits above'); }
+  else { _clearPending('bk-leak'); _vflag('bk-leak',leak,tol); }
   // cash detail
   _v('bk-cashopen',opening);
   _v('bk-cashcoll',cash);
-  const cashexp=opening+cash-bkGet('cash_dep')-bkGet('cash_exp');
+  const cashDep=bkGet('cash_dep');
+  const cashexp=opening+cash-cashDep-bkGet('cash_exp');
   _v('bk-cashexp',cashexp);
   _v('bk-cashdrawer',bkGet('cash_drawer'));
-  const cashgap=cashexp-bkGet('cash_drawer');
-  _vflag('bk-cashgap',cashgap,150);
+  if(cashDep<=0 && bkGet('cash_drawer')<=0){ _pending('bk-cashgap','— enter cash deposited + drawer count'); }
+  else { _clearPending('bk-cashgap'); _vflag('bk-cashgap',cashexp-bkGet('cash_drawer'),tol); }
   const hl=el('bk-headline');
   if(hl){ hl.innerHTML=card2('AVAILABLE (coll+carry)',available,'')
     +card2('LANDED (actual)',landed,'')
-    +card2('POSSIBLE LEAKAGE',leak,Math.abs(leak)<=150?'pos':'neg'); }
+    +(banksEntered ? card2('POSSIBLE LEAKAGE',leak,Math.abs(leak)<=tol?'pos':'neg')
+                   : card2('LEAKAGE','—','')); }
 }
 
 function initRecon(){
